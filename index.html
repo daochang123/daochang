@@ -189,7 +189,7 @@ ul.rules li{margin:4px 0}
 
       <section class="dashboard-panel chart-panel wide" data-chart="chartMarket">
         <div class="panel-head">
-          <div><div class="panel-title">市场走势</div><div class="panel-sub">BTC / ETH / SOL / BNB / DOGE 相对涨跌%（主流币锚定 Binance 实时）</div></div>
+          <div><div class="panel-title">市场走势</div><div class="panel-sub">主流币(BTC/ETH/SOL/BNB/DOGE) + Meme币(PEPE/SHIB/WIF/BONK/FLOKI/MEME) 全部锚定 Binance 实时</div></div>
           <div class="panel-menu"><button class="menu-btn" data-source title="查看数据来源">⋮</button><button class="menu-btn" onclick="toggleEdit(this,'chartMarket')" title="编辑图表">✎</button><select class="type-select" onchange="switchType('chartMarket',this.value)"><option value="line">折线</option></select></div>
         </div>
         <div class="chart wide" id="chartMarket"></div>
@@ -367,7 +367,7 @@ ul.rules li{margin:4px 0}
       },
       sim: {
         tags: ["meme", "alpha"],
-        coinsA: ["RH.MEME", "ARC.DOG", "SOL.WIF", "ETH.CASH", "BNB.PRO", "ARC.PUMP"],
+        coinsA: ["PEPE", "SHIB", "WIF", "BONK", "FLOKI", "MEME"],
         positionPct: 0.20,
         riskPerTradePct: 0.08,
         rrMin: 2.0,
@@ -832,14 +832,13 @@ ul.rules li{margin:4px 0}
     "BNB": { base: 610, vol: 0.016, drift: 0.00015, isMeme: false },
     "DOGE": { base: 0.18, vol: 0.024, drift: 0.00008, isMeme: true },
     "PEPE": { base: 0.000012, vol: 0.032, drift: 0.00004, isMeme: true },
-    "RH.MEME": { base: 0.02, vol: 0.05, drift: 0.00005, isMeme: true },
-    "ARC.DOG": { base: 0.004, vol: 0.06, drift: 0.00004, isMeme: true },
-    "SOL.WIF": { base: 1.8, vol: 0.045, drift: 0.00005, isMeme: true },
-    "ETH.CASH": { base: 0.009, vol: 0.055, drift: 0.00003, isMeme: true },
-    "BNB.PRO": { base: 0.03, vol: 0.05, drift: 0.00004, isMeme: true },
-    "ARC.PUMP": { base: 0.0015, vol: 0.07, drift: 0.00003, isMeme: true }
+    "SHIB": { base: 0.000025, vol: 0.035, drift: 0.00004, isMeme: true },
+    "WIF": { base: 2.5, vol: 0.050, drift: 0.00005, isMeme: true },
+    "BONK": { base: 0.000028, vol: 0.040, drift: 0.00004, isMeme: true },
+    "FLOKI": { base: 0.00018, vol: 0.038, drift: 0.00004, isMeme: true },
+    "MEME": { base: 0.015, vol: 0.042, drift: 0.00004, isMeme: true }
   };
-  var REAL_COINS = ["BTC", "ETH", "SOL", "BNB", "DOGE"]; // 锚定真实行情的币种（主流币，不含meme/黑马）
+  var REAL_COINS = ["BTC", "ETH", "SOL", "BNB", "DOGE", "PEPE", "SHIB", "WIF", "BONK", "FLOKI", "MEME"]; // 所有主理涉及的币种均锚定真实行情
 
   function initMarket(seed) {
     var rng = mulberry32(seed);
@@ -1502,7 +1501,13 @@ ul.rules li{margin:4px 0}
         }
       }
       stepMarket(st.market, rng, realPrices);
-      st.priceHistory.push({ t: st.tick, BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price), BNB: r2(st.market.BNB.price), DOGE: r2(st.market.DOGE.price) });
+      st.priceHistory.push({ 
+        t: st.tick, 
+        BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price), 
+        BNB: r2(st.market.BNB.price), DOGE: r2(st.market.DOGE.price),
+        PEPE: r2(st.market.PEPE.price), SHIB: r2(st.market.SHIB.price), WIF: r2(st.market.WIF.price),
+        BONK: r2(st.market.BONK.price), FLOKI: r2(st.market.FLOKI.price), MEME: r2(st.market.MEME.price)
+      });
       if (st.priceHistory.length > 6000) st.priceHistory.shift();
       for (var id in st.managers) {
         var mgr = st.managers[id]; var profile = PROFILES_BY_ID[id]; if (!profile) continue;
@@ -1754,15 +1759,36 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     },
     chartMarket: function () {
       var cats = []; var btc = []; var eth = []; var sol = []; var bnb = []; var doge = [];
+      var pepe = []; var shib = []; var wif = []; var bonk = []; var floki = []; var meme = [];
       for (var j = 0; j < state.priceHistory.length; j++) {
         var h = state.priceHistory[j];
         if (h.t <= horizon) {
           cats.push(h.t / TICK_PER_DAY);
           btc.push(h.BTC); eth.push(h.ETH); sol.push(h.SOL);
           bnb.push(h.BNB); doge.push(h.DOGE);
+          if (h.PEPE) pepe.push(h.PEPE);
+          if (h.SHIB) shib.push(h.SHIB);
+          if (h.WIF) wif.push(h.WIF);
+          if (h.BONK) bonk.push(h.BONK);
+          if (h.FLOKI) floki.push(h.FLOKI);
+          if (h.MEME) meme.push(h.MEME);
         }
       }
       function norm(arr, base) { return arr.map(function (v) { return r2((v / base - 1) * 100); }); }
+      var series = [
+        { name: "BTC", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(btc, btc[0] || 1) },
+        { name: "ETH", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(eth, eth[0] || 1) },
+        { name: "SOL", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(sol, sol[0] || 1) },
+        { name: "BNB", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(bnb, bnb[0] || 1) },
+        { name: "DOGE", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(doge, doge[0] || 1) }
+      ];
+      // Meme coins (only add if data exists)
+      if (pepe.length) series.push({ name: "PEPE", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(pepe, pepe[0] || 1) });
+      if (shib.length) series.push({ name: "SHIB", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(shib, shib[0] || 1) });
+      if (wif.length) series.push({ name: "WIF", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(wif, wif[0] || 1) });
+      if (bonk.length) series.push({ name: "BONK", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(bonk, bonk[0] || 1) });
+      if (floki.length) series.push({ name: "FLOKI", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(floki, floki[0] || 1) });
+      if (meme.length) series.push({ name: "MEME", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(meme, meme[0] || 1) });
       return {
         backgroundColor: "transparent",
         grid: { left: 44, right: 16, top: 30, bottom: 34 },
@@ -1770,13 +1796,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         tooltip: { trigger: "axis", valueFormatter: function (v) { return v == null ? "-" : r2(v) + "%"; } },
         xAxis: { type: "value", name: "天", nameTextStyle: { color: cssVar("--chart-muted") }, axisLine: { lineStyle: { color: cssVar("--chart-line") } }, axisLabel: { color: cssVar("--chart-muted") }, splitLine: { show: false } },
         yAxis: { type: "value", name: "涨跌%", nameTextStyle: { color: cssVar("--chart-muted") }, axisLabel: { color: cssVar("--chart-muted") }, splitLine: { lineStyle: { color: cssVar("--chart-line") } } },
-        series: [
-          { name: "BTC", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(btc, btc[0] || 1) },
-          { name: "ETH", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(eth, eth[0] || 1) },
-          { name: "SOL", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(sol, sol[0] || 1) },
-          { name: "BNB", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(bnb, bnb[0] || 1) },
-          { name: "DOGE", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(doge, doge[0] || 1) }
-        ]
+        series: series
       };
     }
   };
