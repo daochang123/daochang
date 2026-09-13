@@ -113,15 +113,37 @@
       };
     },
     chartMarket: function () {
-      var cats = []; var btc = []; var eth = []; var sol = [];
+      var cats = []; var btc = []; var eth = []; var sol = []; var bnb = []; var doge = [];
+      var pepe = []; var shib = []; var wif = []; var bonk = []; var floki = []; var meme = [];
       for (var j = 0; j < state.priceHistory.length; j++) {
         var h = state.priceHistory[j];
         if (h.t <= horizon) {
           cats.push(h.t / TICK_PER_DAY);
           btc.push(h.BTC); eth.push(h.ETH); sol.push(h.SOL);
+          bnb.push(h.BNB); doge.push(h.DOGE);
+          if (h.PEPE) pepe.push(h.PEPE);
+          if (h.SHIB) shib.push(h.SHIB);
+          if (h.WIF) wif.push(h.WIF);
+          if (h.BONK) bonk.push(h.BONK);
+          if (h.FLOKI) floki.push(h.FLOKI);
+          if (h.MEME) meme.push(h.MEME);
         }
       }
       function norm(arr, base) { return arr.map(function (v) { return r2((v / base - 1) * 100); }); }
+      var series = [
+        { name: "BTC", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(btc, btc[0] || 1) },
+        { name: "ETH", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(eth, eth[0] || 1) },
+        { name: "SOL", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(sol, sol[0] || 1) },
+        { name: "BNB", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(bnb, bnb[0] || 1) },
+        { name: "DOGE", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(doge, doge[0] || 1) }
+      ];
+      // Meme coins (only add if data exists)
+      if (pepe.length) series.push({ name: "PEPE", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(pepe, pepe[0] || 1) });
+      if (shib.length) series.push({ name: "SHIB", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(shib, shib[0] || 1) });
+      if (wif.length) series.push({ name: "WIF", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(wif, wif[0] || 1) });
+      if (bonk.length) series.push({ name: "BONK", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(bonk, bonk[0] || 1) });
+      if (floki.length) series.push({ name: "FLOKI", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(floki, floki[0] || 1) });
+      if (meme.length) series.push({ name: "MEME", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1, type: "dotted" }, data: norm(meme, meme[0] || 1) });
       return {
         backgroundColor: "transparent",
         grid: { left: 44, right: 16, top: 30, bottom: 34 },
@@ -129,11 +151,7 @@
         tooltip: { trigger: "axis", valueFormatter: function (v) { return v == null ? "-" : r2(v) + "%"; } },
         xAxis: { type: "value", name: "天", nameTextStyle: { color: cssVar("--chart-muted") }, axisLine: { lineStyle: { color: cssVar("--chart-line") } }, axisLabel: { color: cssVar("--chart-muted") }, splitLine: { show: false } },
         yAxis: { type: "value", name: "涨跌%", nameTextStyle: { color: cssVar("--chart-muted") }, axisLabel: { color: cssVar("--chart-muted") }, splitLine: { lineStyle: { color: cssVar("--chart-line") } } },
-        series: [
-          { name: "BTC", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(btc, btc[0] || 1) },
-          { name: "ETH", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(eth, eth[0] || 1) },
-          { name: "SOL", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(sol, sol[0] || 1) }
-        ]
+        series: series
       };
     }
   };
@@ -187,6 +205,40 @@
     $("dataFreshness").textContent = "已推进 " + day(done) + " 天 · 数据更新 " + new Date().toLocaleString("zh-CN", { hour12: false });
   }
 
+  // ---------- 排行榜 ----------
+  function renderRanking() {
+    var summary = ENGINE.summary(state);
+    // 按权益排序
+    summary.sort(function (a, b) { return b.equity - a.equity; });
+    var el = $("rankingList");
+    if (!el) return;
+    var html = "";
+    for (var i = 0; i < summary.length; i++) {
+      var r = summary[i];
+      var rank = i + 1;
+      var rankClass = rank === 1 ? "gold" : (rank === 2 ? "silver" : (rank === 3 ? "bronze" : ""));
+      var rankIcon = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : rank));
+      var pnlClass = r.pnlPct >= 0 ? "up" : "down";
+      var pnlSign = r.pnlPct >= 0 ? "+" : "";
+      html += '<div class="ranking-item">' +
+        '<div class="ranking-rank ' + rankClass + '">' + rankIcon + '</div>' +
+        '<div class="ranking-info">' +
+          '<div class="ranking-name" style="color:' + r.color + '">' + r.name + ' <span style="color:var(--muted);font-weight:400;font-size:11px">' + r.arena + '</span></div>' +
+          '<div class="ranking-stats">' +
+            '<span>交易 ' + r.trades + '</span>' +
+            '<span>胜率 ' + pct(r.winRate) + '</span>' +
+            '<span>回撤 -' + pct(r.maxDrawdown) + '</span>' +
+            '<span>持仓 ' + r.open + '</span>' +
+            '<span>进化 ' + r.evolution + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ranking-equity">' + r2(r.equity) + 'U</div>' +
+        '<div class="ranking-pnl ' + pnlClass + '">' + pnlSign + pct(r.pnlPct) + '</div>' +
+        '</div>';
+    }
+    el.innerHTML = html;
+  }
+
   // ---------- 表格 ----------
   function renderDecisions() {
     var rows = [];
@@ -204,9 +256,9 @@
     for (var k = 0; k < rows.length; k++) {
       var r = rows[k];
       var isBlock = r.type === "iron_block";
-      var typeLabel = r.type === "open" ? "开仓" : (r.type === "close" ? "平仓" : (isBlock ? "铁律拦截" : r.type));
-      var typeCls = isBlock ? ' class="hl-red-bg"' : "";
-      var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : "";
+      var typeLabel = r.type === "open" ? "开仓" : (r.type === "close" ? "平仓" : (r.type === "1_3_watch" ? "1+3观望" : (isBlock ? "铁律拦截" : r.type)));
+      var typeCls = isBlock ? ' class="hl-red-bg"' : (r.type === "1_3_watch" ? ' class="hl-yellow"' : "");
+      var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : (r.type === "1_3_watch" ? '<span class="tag" style="background:#fff3cd;color:#856404">观望</span> ' : "");
       html += '<tr><td style="color:' + r.color + '">' + r.name + '</td><td>' + r.day + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
         '</td><td>' + r.side + '</td><td>' + r.detail + '</td><td class="rat">' + r.rationale + '</td></tr>';
     }
@@ -320,7 +372,7 @@
     state = run(horizon);
     var s = Math.floor(horizon / TICK_PER_DAY);
     $("activeRangeLabel").textContent = "第 0 – " + s + " 天" + (activePreset === "live" ? "（实时）" : "（推演预览）");
-    renderKpi(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
+    renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
     refreshCharts();
   }
   function applyCustom() {
@@ -384,7 +436,7 @@
       }).join("\n");
       snap += "\n已推进 " + day(state.tick) + " 天。";
     } catch (e) { snap = ""; }
-    return "你是「AI主理·实盘道场/期权演武场」看板的交易军师，熟悉五位 KOL 体系（蓝鸟会/狙击手/老猫/熬鹰/洪七公）。\n" +
+    return "你是「AI主理·实盘道场/期权演武场」看板的交易军师，熟悉六位 KOL 体系（蓝鸟会/狙击手/老猫/熬鹰/幻狐/洪七公）。\n" +
       "请基于下方实时快照与用户问题，给出简明的解读、归因或操作建议；涉及具体策略时点出对应主理人的规则铁律。回答用中文、简洁、分点。\n" + snap;
   }
 
@@ -470,6 +522,26 @@
     aiAppend("sys", "对话已清空。");
   }
 
+  // ---------- 刷新数据 ----------
+  function refreshData() {
+    var btn = $("refreshBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "⟳"; btn.style.opacity = 0.5; }
+    // 强制绕过缓存拉最新快照
+    fetch("data/latest.json?v=" + Date.now(), { cache: "no-store" })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .catch(function () { return null; })
+      .then(function (live) {
+        if (live && live.managers && typeof live.tick === "number" && live.market) {
+          bootWithLiveState(live);
+          if (btn) { btn.textContent = "✓"; setTimeout(function () { btn.textContent = "↻"; btn.disabled = false; btn.style.opacity = 1; }, 1500); }
+        } else {
+          // 回退确定性推演
+          bootDeterministic();
+          if (btn) { btn.textContent = "✗"; setTimeout(function () { btn.textContent = "↻"; btn.disabled = false; btn.style.opacity = 1; }, 1500); }
+        }
+      });
+  }
+
   // ---------- 事件绑定 ----------
   function bindEvents() {
     document.querySelectorAll("[data-range-preset]").forEach(function (b) {
@@ -478,6 +550,7 @@
     $("rangeStart").addEventListener("change", applyCustom);
     $("rangeEnd").addEventListener("change", applyCustom);
     $("themeBtn").addEventListener("click", toggleTheme);
+    $("refreshBtn").addEventListener("click", refreshData);
     $("mgClose").addEventListener("click", closeDrawer);
     $("modalClose").addEventListener("click", closeModal);
     $("copySnippet").addEventListener("click", function () { copyText("modalSnippet"); });
@@ -509,7 +582,7 @@
     });
   }
   function renderAllTables() {
-    renderIronRules(); renderKpi(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
+    renderIronRules(); renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
   }
 
   // 实时/云端快照模式：优先读取服务器按 12 小时推进生成的状态
