@@ -1904,6 +1904,12 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   window.openManager = openManager;
   window.showSource = showSource;
 })();
+/* 启动看板运行时 */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", function () { setupDashboardRuntime(); });
+} else {
+  setupDashboardRuntime();
+}
 </script>
 </body>
 </html>
