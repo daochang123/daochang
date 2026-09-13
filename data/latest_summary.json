@@ -1,0 +1,111 @@
+{
+  "generated_at": "2026-09-13T01:49:43.819Z",
+  "timezone": "Asia/Shanghai",
+  "seed": 20260913,
+  "startEquity": 1000,
+  "tick": 13,
+  "day": 0.5,
+  "managers": [
+    {
+      "id": "lanniaohui",
+      "name": "蓝鸟会",
+      "arena": "实盘道场",
+      "equity": 1000,
+      "cash": 1000,
+      "pnl": 0,
+      "pnlPct": 0,
+      "realized": 0,
+      "trades": 0,
+      "winRate": 0,
+      "maxDrawdown": 0,
+      "open": 0,
+      "decisions": 0,
+      "evolution": 1,
+      "ironBlocks": 0
+    },
+    {
+      "id": "sniper",
+      "name": "狙击手",
+      "arena": "实盘道场",
+      "equity": 985.1411343903853,
+      "cash": 744.0780824215128,
+      "pnl": -14.858865609614668,
+      "pnlPct": -0.014858865609614668,
+      "realized": -7.895890104649573,
+      "trades": 1,
+      "winRate": 0,
+      "maxDrawdown": 0.024210080521336864,
+      "open": 1,
+      "decisions": 3,
+      "evolution": 1,
+      "ironBlocks": 0
+    },
+    {
+      "id": "laomao",
+      "name": "老猫",
+      "arena": "实盘道场",
+      "equity": 982.5805166396284,
+      "cash": 850,
+      "pnl": -17.4194833603716,
+      "pnlPct": -0.0174194833603716,
+      "realized": 0,
+      "trades": 0,
+      "winRate": 0,
+      "maxDrawdown": 0.034385091367535266,
+      "open": 1,
+      "decisions": 1,
+      "evolution": 0,
+      "ironBlocks": 0
+    },
+    {
+      "id": "aoying",
+      "name": "熬鹰",
+      "arena": "实盘道场",
+      "equity": 1018.3205910295155,
+      "cash": 274.625,
+      "pnl": 18.320591029515526,
+      "pnlPct": 0.018320591029515526,
+      "realized": 0,
+      "trades": 0,
+      "winRate": 0,
+      "maxDrawdown": 0.018137562204957835,
+      "open": 3,
+      "decisions": 3,
+      "evolution": 0,
+      "ironBlocks": 0
+    },
+    {
+      "id": "hongqigong",
+      "name": "洪七公",
+      "arena": "期权演武场",
+      "equity": 985.4585454631781,
+      "cash": 1013.1228617699546,
+      "pnl": -14.541454536821902,
+      "pnlPct": -0.014541454536821902,
+      "realized": -35.141084028614664,
+      "trades": 1,
+      "winRate": 0,
+      "maxDrawdown": 0.05654222872022847,
+      "open": 1,
+      "decisions": 3,
+      "evolution": 1,
+      "ironBlocks": 0
+    }
+  ],
+  "market": {
+    "BTC": {
+      "price": 103911.05,
+      "chgPct": -0.94
+    },
+    "ETH": {
+      "price": 3147.19,
+      "chgPct": -1.72
+    },
+    "SOL": {
+      "price": 221.04,
+      "chgPct": 0.9
+    }
+  },
+  "startTick": 12,
+  "advancedTicks": 1
+}

@@ -1,0 +1,11 @@
+# 本地构建产物 / 密钥不外传
+/node_modules/
+*.log
+
+# Server酱 SendKey 含敏感信息，不推公网仓库
+data/serverchan_sendkey.txt
+
+# 保留看板可访问的核心产物
+!index.html
+!data/latest.json
+!data/latest_summary.json

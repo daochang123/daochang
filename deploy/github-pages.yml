@@ -1,0 +1,53 @@
+# AI主理·道场看板 · GitHub Pages 部署（手机长期访问）
+# 用法：
+#   1. 把 /workspace/daochang 整个目录推到 GitHub 仓库（如 daochang）
+#   2. 仓库 Settings → Pages → Source: "Deploy from a branch" → main → / (root)
+#   3. 访问 https://<你的用户名>.github.io/daochang/
+#
+# 看板是纯静态，无后端，Pages 即可。data/latest.json 会被看板 JS 通过
+# 相对路径 ./data/latest.json 读取，Pages 直接托管该文件即可。
+
+name: Deploy static site to Pages
+
+on:
+  # 推送时自动重新部署
+  push:
+    branches: [ main ]
+  # 允许在 Actions 里手动触发
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 看板是纯静态，无需构建（build.js 已在本地生成 index.html）
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .   # 整个仓库根目录即看板目录
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
