@@ -740,9 +740,9 @@ ul.rules li{margin:4px 0}
 
   // ---------- 市场模型 ----------
   var COIN_DEF = {
-    "BTC": { base: 105000, vol: 0.010, drift: 0.00025, isMeme: false },
-    "ETH": { base: 3200, vol: 0.014, drift: 0.00018, isMeme: false },
-    "SOL": { base: 220, vol: 0.020, drift: 0.00020, isMeme: false },
+    "BTC": { base: 77284, vol: 0.010, drift: 0.00025, isMeme: false },
+    "ETH": { base: 2520, vol: 0.014, drift: 0.00018, isMeme: false },
+    "SOL": { base: 102, vol: 0.020, drift: 0.00020, isMeme: false },
     "BNB": { base: 610, vol: 0.016, drift: 0.00015, isMeme: false },
     "DOGE": { base: 0.18, vol: 0.024, drift: 0.00008, isMeme: true },
     "PEPE": { base: 0.000012, vol: 0.032, drift: 0.00004, isMeme: true },
@@ -753,6 +753,7 @@ ul.rules li{margin:4px 0}
     "BNB.PRO": { base: 0.03, vol: 0.05, drift: 0.00004, isMeme: true },
     "ARC.PUMP": { base: 0.0015, vol: 0.07, drift: 0.00003, isMeme: true }
   };
+  var REAL_COINS = ["BTC", "ETH", "SOL"]; // 锚定真实行情的币种
 
   function initMarket(seed) {
     var rng = mulberry32(seed);
@@ -771,18 +772,33 @@ ul.rules li{margin:4px 0}
     return coins;
   }
 
-  function stepMarket(coins, rng) {
+  function stepMarket(coins, rng, realPrices) {
     for (var s in coins) {
       var c = coins[s];
-      var shock = (rng() < 0.008) ? (rng() < 0.5 ? -1 : 1) * (0.03 + rng() * 0.05) : 0;
-      c.drift = c.drift * 0.985 + (rng() < 0.04 ? (rng() < 0.5 ? -1 : 1) * 0.0006 : 0);
-      // 趋势状态机：持久趋势成分，给趋势跟随/均值回归系统留出可捕捉的 edge
-      if (rng() < 0.01) { if (c.regime === 1) c.regime = -1; else c.regime = (rng() < 0.5 ? 1 : -1); c.regime = c.regime || 0; }
-      else if (rng() < 0.006) c.regime = 0;
-      var trendDrift = (c.regime || 0) * 0.0005; // 0.05%/tick ≈ 1.2%/day，可跟随
-      var sigma = c.vol * (0.6 + rng() * 0.9);
-      var ret = c.drift + trendDrift + sigma * gauss(rng) + shock;
-      c.price = Math.max(c.base * 0.05, c.price * Math.exp(ret));
+      var realPrice = (realPrices && realPrices[s] && REAL_COINS.indexOf(s) >= 0) ? realPrices[s] : null;
+      var ret;
+      if (realPrice) {
+        // ===== 锚定真实行情 =====
+        var prev = c.price || c.base;
+        ret = Math.log(realPrice / prev);
+        c.price = realPrice;
+        // 从 SMA 交叉推断趋势状态（给策略用）
+        if (c.sma5 > c.sma20 * 1.002) c.regime = 1;
+        else if (c.sma5 < c.sma20 * 0.998) c.regime = -1;
+        else c.regime = 0;
+        c.drift = clamp(ret * 0.3 + c.drift * 0.5, -0.008, 0.008);
+      } else {
+        // ===== 合成行情（原逻辑） =====
+        var shock = (rng() < 0.008) ? (rng() < 0.5 ? -1 : 1) * (0.03 + rng() * 0.05) : 0;
+        c.drift = c.drift * 0.985 + (rng() < 0.04 ? (rng() < 0.5 ? -1 : 1) * 0.0006 : 0);
+        if (rng() < 0.01) { if (c.regime === 1) c.regime = -1; else c.regime = (rng() < 0.5 ? 1 : -1); c.regime = c.regime || 0; }
+        else if (rng() < 0.006) c.regime = 0;
+        var trendDrift = (c.regime || 0) * 0.0005;
+        var sigma = c.vol * (0.6 + rng() * 0.9);
+        ret = c.drift + trendDrift + sigma * gauss(rng) + shock;
+        c.price = Math.max(c.base * 0.05, c.price * Math.exp(ret));
+      }
+      // ===== 公共指标更新（真实 & 合成共用） =====
       c.hist.push(c.price);
       if (c.hist.length > 30) c.hist.shift();
       var arr = c.hist, n = arr.length;
@@ -800,8 +816,8 @@ ul.rules li{margin:4px 0}
       if (c.isMeme) {
         c.heat = clamp(c.heat + (rng() - 0.5) * 8 + (ret > 0 ? 2 : -1), 10, 95);
         c.smartMoney = clamp(c.smartMoney + (rng() - 0.48) * 3, 3, 40);
-        if (c.heat > 60 && rng() < 0.55) c.price *= Math.exp(0.0004 + rng() * 0.0005); // 热度瞬态推高价格（非持续反馈）
-        c.drift = clamp(c.drift, -0.006, 0.006); // 防热度正反馈导致价格失控
+        if (c.heat > 60 && rng() < 0.55) c.price *= Math.exp(0.0004 + rng() * 0.0005);
+        c.drift = clamp(c.drift, -0.006, 0.006);
         c.rug = clamp(
           (c.volSpike > 2 ? 1.2 : 0) +
           (c.rsi > 80 ? 1 : 0) +
@@ -1175,7 +1191,7 @@ ul.rules li{margin:4px 0}
   }
 
   // ---------- 主推进 ----------
-  function advance(st, nTicks) {
+  function advance(st, nTicks, realPrices) {
     // 可续推：把 PRNG 内部状态 a 持久化，避免断点重播导致随机序列重复
     var a = (typeof st.rngState === "number" && !isNaN(st.rngState)) ? (st.rngState | 0) : (st.seed | 0);
     var rng = function () {
@@ -1194,7 +1210,7 @@ ul.rules li{margin:4px 0}
           if (prf) rollDailyReview(st.managers[idr], prf, st);
         }
       }
-      stepMarket(st.market, rng);
+      stepMarket(st.market, rng, realPrices);
       st.priceHistory.push({ t: st.tick, BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price) });
       if (st.priceHistory.length > 6000) st.priceHistory.shift();
       for (var id in st.managers) {
