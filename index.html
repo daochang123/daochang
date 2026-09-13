@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="refresh" content="600">
 <title>AI主理 · 实盘道场 / 期权演武场 看板</title>
 <style>
 
@@ -134,6 +135,23 @@ ul.rules li{margin:4px 0}
   .controls{margin-left:0;width:100%}
   .chart{height:240px}
 }
+/* 排行榜 */
+.ranking-panel{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.ranking-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ranking-list{display:flex;flex-direction:column;gap:8px}
+.ranking-item{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--page);border:1px solid var(--line);border-radius:8px;transition:all .2s}
+.ranking-item:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(47,107,255,.1)}
+.ranking-rank{font-size:18px;font-weight:700;width:32px;text-align:center}
+.ranking-rank.gold{color:#FFD700}
+.ranking-rank.silver{color:#C0C0C0}
+.ranking-rank.bronze{color:#CD7F32}
+.ranking-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.ranking-name{font-size:13px;font-weight:600;color:var(--ink)}
+.ranking-stats{font-size:11px;color:var(--muted);display:flex;gap:12px}
+.ranking-equity{font-size:15px;font-weight:700;color:var(--accent)}
+.ranking-pnl{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px}
+.ranking-pnl.up{background:#d4edda;color:#155724}
+.ranking-pnl.down{background:#f8d7da;color:#721c24}
 
 </style>
 </head>
@@ -166,6 +184,10 @@ ul.rules li{margin:4px 0}
     <p class="section-title">主理人总览 · 起始资金 1000U</p>
     <div class="kpi-grid" id="kpiGrid">
       <section class="kpi-tile"><div class="kpi-name">加载中…</div></section>
+    </div>
+    <div class="ranking-panel" id="rankingPanel">
+      <div class="ranking-title">🏆 实时排行榜 · 六大主理PK</div>
+      <div class="ranking-list" id="rankingList"></div>
     </div>
   </section>
 
@@ -1942,6 +1964,40 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     $("dataFreshness").textContent = "已推进 " + day(done) + " 天 · 数据更新 " + new Date().toLocaleString("zh-CN", { hour12: false });
   }
 
+  // ---------- 排行榜 ----------
+  function renderRanking() {
+    var summary = ENGINE.summary(state);
+    // 按权益排序
+    summary.sort(function (a, b) { return b.equity - a.equity; });
+    var el = $("rankingList");
+    if (!el) return;
+    var html = "";
+    for (var i = 0; i < summary.length; i++) {
+      var r = summary[i];
+      var rank = i + 1;
+      var rankClass = rank === 1 ? "gold" : (rank === 2 ? "silver" : (rank === 3 ? "bronze" : ""));
+      var rankIcon = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : rank));
+      var pnlClass = r.pnlPct >= 0 ? "up" : "down";
+      var pnlSign = r.pnlPct >= 0 ? "+" : "";
+      html += '<div class="ranking-item">' +
+        '<div class="ranking-rank ' + rankClass + '">' + rankIcon + '</div>' +
+        '<div class="ranking-info">' +
+          '<div class="ranking-name" style="color:' + r.color + '">' + r.name + ' <span style="color:var(--muted);font-weight:400;font-size:11px">' + r.arena + '</span></div>' +
+          '<div class="ranking-stats">' +
+            '<span>交易 ' + r.trades + '</span>' +
+            '<span>胜率 ' + pct(r.winRate) + '</span>' +
+            '<span>回撤 -' + pct(r.maxDrawdown) + '</span>' +
+            '<span>持仓 ' + r.open + '</span>' +
+            '<span>进化 ' + r.evolution + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ranking-equity">' + r2(r.equity) + 'U</div>' +
+        '<div class="ranking-pnl ' + pnlClass + '">' + pnlSign + pct(r.pnlPct) + '</div>' +
+        '</div>';
+    }
+    el.innerHTML = html;
+  }
+
   // ---------- 表格 ----------
   function renderDecisions() {
     var rows = [];
@@ -2075,7 +2131,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     state = run(horizon);
     var s = Math.floor(horizon / TICK_PER_DAY);
     $("activeRangeLabel").textContent = "第 0 – " + s + " 天" + (activePreset === "live" ? "（实时）" : "（推演预览）");
-    renderKpi(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
+    renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
     refreshCharts();
   }
   function applyCustom() {
@@ -2285,7 +2341,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     });
   }
   function renderAllTables() {
-    renderIronRules(); renderKpi(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
+    renderIronRules(); renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
   }
 
   // 实时/云端快照模式：优先读取服务器按 12 小时推进生成的状态
