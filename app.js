@@ -419,13 +419,19 @@
     }
   };
 
-  // ---------- AI 对话（agnès 模型，优先 3.0-flash，失败回退 2.5-flash） ----------
-  var AI_CHAT_BASE = "https://api.agnes-ai.cn/v1";
-  var AI_CHAT_KEY = "sk-IshOaJW7iFMSCMhDkFvMCXxQPg2awNuZ8wrT7MNYptA1bTB0";
-  var AI_CHAT_MODELS = ["agnes-3.0-flash", "agnes-2.5-flash"];
+  // ---------- AI 对话（agnès 模型，优先 3.0-flash，失败依次回退 2.5-flash → DeepSeek V4 flash） ----------
+  var AGNES_BASE = "https://api.agnes-ai.cn/v1";
+  var AGNES_KEY = "sk-IshOaJW7iFMSCMhDkFvMCXxQPg2awNuZ8wrT7MNYptA1bTB0";
+  var DEEPSEEK_BASE = "https://api.deepseek.com/v1";
+  var DEEPSEEK_KEY = ""; // 可选：填入 DeepSeek 官方 API Key（sk-...）以启用第三级回退
+  var AI_CHAT_MODELS = [
+    { id: "agnes-3.0-flash", label: "agnès 3.0-flash", base: AGNES_BASE, key: AGNES_KEY },
+    { id: "agnes-2.5-flash", label: "agnès 2.5-flash", base: AGNES_BASE, key: AGNES_KEY },
+    { id: "deepseek-v4-flash", label: "DeepSeek V4 flash", base: DEEPSEEK_BASE, key: DEEPSEEK_KEY }
+  ];
   var aiHistory = []; // [{role, content}]
   var aiBusy = false;
-  var aiActiveModel = AI_CHAT_MODELS[0];
+  var aiActiveModel = 0; // 激活模型的索引（0=agnès 3.0-flash，优先）
 
   function buildSystemPrompt() {
     var snap = "";
@@ -467,16 +473,17 @@
     aiBusy = true;
     var btn = $("aiChatSend");
     btn.disabled = true;
-    aiAppend("sys", "正在调用 " + aiActiveModel + "（不通则自动切换 " + AI_CHAT_MODELS[1] + "）…");
+    aiAppend("sys", "正在调用 " + AI_CHAT_MODELS[aiActiveModel].label + "（不通则按 2.5-flash → DeepSeek V4 flash 顺序自动回退）…");
 
     var messages = [{ role: "system", content: buildSystemPrompt() }].concat(aiHistory.slice(-12));
 
-    function callOnce(model) {
-      var last = aiHistory.length; // 占位避免未使用
-      return fetch(AI_CHAT_BASE + "/chat/completions", {
+    function callOnce(idx) {
+      var m = AI_CHAT_MODELS[idx];
+      if (!m.key) return Promise.reject(new Error("no api key"));
+      return fetch(m.base + "/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AI_CHAT_KEY },
-        body: JSON.stringify({ model: model, messages: messages, temperature: 0.4, max_tokens: 600 })
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + m.key },
+        body: JSON.stringify({ model: m.id, messages: messages, temperature: 0.4, max_tokens: 600 })
       }).then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.json();
@@ -487,27 +494,28 @@
       });
     }
 
-    callOnce(aiActiveModel)
-      .catch(function () {
-        // 回退到 2.5
-        if (aiActiveModel === AI_CHAT_MODELS[0]) {
-          aiActiveModel = AI_CHAT_MODELS[1];
-          aiAppend("sys", "3.0 调用失败，已自动切换到 " + AI_CHAT_MODELS[1] + " 重试。");
-          return callOnce(aiActiveModel).catch(function () {
-            aiActiveModel = AI_CHAT_MODELS[0]; // 复位，下次优先 3.0
-            throw new Error("all models failed");
-          });
+    // 三级回退链：agnès 3.0-flash → agnès 2.5-flash → DeepSeek V4 flash；全部失败才报错
+    function chainFrom(idx) {
+      return callOnce(idx).catch(function () {
+        if (idx + 1 < AI_CHAT_MODELS.length) {
+          aiActiveModel = idx + 1;
+          aiAppend("sys", AI_CHAT_MODELS[idx].label + " 调用失败，已自动切换到 " + AI_CHAT_MODELS[idx + 1].label + " 重试。");
+          return chainFrom(idx + 1);
         }
+        aiActiveModel = 0; // 全部失败，复位优先 agnès 3.0-flash
         throw new Error("all models failed");
-      })
+      });
+    }
+
+    chainFrom(aiActiveModel)
       .then(function (content) {
         aiHistory.push({ role: "assistant", content: content });
-        aiAppend("assistant", content, "模型：" + aiActiveModel);
-        if (aiActiveModel === AI_CHAT_MODELS[1]) aiActiveModel = AI_CHAT_MODELS[0]; // 复位优先 3.0
+        aiAppend("assistant", content, "模型：" + AI_CHAT_MODELS[aiActiveModel].label);
+        aiActiveModel = 0; // 成功后复位，下次优先 agnès 3.0-flash
       })
       .catch(function (err) {
-        aiActiveModel = AI_CHAT_MODELS[0];
-        aiAppend("sys", "两个模型均调用失败（" + (err && err.message ? err.message : err) + "），请检查网络或稍后再试。");
+        aiActiveModel = 0;
+        aiAppend("sys", "三个模型均调用失败（" + (err && err.message ? err.message : err) + "），请检查网络或稍后再试。");
       })
       .then(function () {
         aiBusy = false;
@@ -518,7 +526,7 @@
   function aiClear() {
     aiHistory = [];
     $("aiChatLog").innerHTML = "";
-    aiActiveModel = AI_CHAT_MODELS[0];
+    aiActiveModel = 0;
     aiAppend("sys", "对话已清空。");
   }
 
