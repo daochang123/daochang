@@ -82,6 +82,7 @@ td.rat{max-width:300px;white-space:normal;color:var(--muted)}
 .hl-red-bg{color:#e03a3a;font-weight:700;background:rgba(224,58,58,.10)}
 .hl-green{color:#0fa968;font-weight:700}
 .hl-green-bg{color:#0fa968;font-weight:700;background:rgba(15,169,104,.10)}
+.hl-yellow{color:#856404;font-weight:600;background:rgba(255,243,205,.12)}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;font-weight:700}
 .tag-red{background:rgba(224,58,58,.14);color:#e03a3a}
 .tag-green{background:rgba(15,169,104,.14);color:#0fa968}
@@ -188,7 +189,7 @@ ul.rules li{margin:4px 0}
 
       <section class="dashboard-panel chart-panel wide" data-chart="chartMarket">
         <div class="panel-head">
-          <div><div class="panel-title">市场走势</div><div class="panel-sub">BTC / ETH / SOL 相对涨跌%</div></div>
+          <div><div class="panel-title">市场走势</div><div class="panel-sub">BTC / ETH / SOL / BNB / DOGE 相对涨跌%（主流币锚定 Binance 实时）</div></div>
           <div class="panel-menu"><button class="menu-btn" data-source title="查看数据来源">⋮</button><button class="menu-btn" onclick="toggleEdit(this,'chartMarket')" title="编辑图表">✎</button><select class="type-select" onchange="switchType('chartMarket',this.value)"><option value="line">折线</option></select></div>
         </div>
         <div class="chart wide" id="chartMarket"></div>
@@ -285,8 +286,8 @@ ul.rules li{margin:4px 0}
 /* profiles（蒸馏体系库） */
 /*
  * 道场 KOL 蒸馏体系库
- * 5 位 AI 主理人：蓝鸟会 / 狙击手 / 老猫 / 熬鹰（实盘道场）+ 洪七公（期权演武场）
- * 数据源：4 位 KOL 的 X(Twitter) 推文语料（详见蒸馏报告）
+ * 6 位 AI 主理人：蓝鸟会 / 狙击手 / 老猫 / 熬鹰 / 幻狐（实盘道场）+ 洪七公（期权演武场）
+ * 数据源：KOL 推文语料与幻狐机构操盘交易体系课程蒸馏
  * 用途：驱动模拟盘决策引擎、体系课程、自我纠错沉淀
  */
 (function (root, factory) {
@@ -686,6 +687,89 @@ ul.rules li{margin:4px 0}
         rrMin: 1.5,
         holdMaxTicks: 90
       }
+    },
+    {
+      id: "huanhu",
+      name: "幻狐",
+      aka: "Donato",
+      color: "#e91e63",
+      arena: "实盘道场",
+      style: "机构操盘 · 1+3右侧交易 · 六大板块 · 全维度监控",
+      thesis: "一就是一，二就是二，只需执行。",
+      coreSystem: {
+        name: "六大板块 + 1+3模型（右侧交易精髓）",
+        desc: "站在机构（聪明钱）角度做交易，不预测行情，而是等机构制造的低点/突破点被K线确认后，用1+3模型做右侧入场。六大板块（动量反转/黑马长打/趋势判断/EA套利/高胜算/强者恒强）可结合使用，核心是收盘价确认、高盈亏比(≥3:1)与永不被套的风控铁律。"
+      },
+      coreLogic: [
+        { title: "1+3右侧确认（核心中的核心）", body: "上涨1+3：先找一段下跌的最低点，若最低点是创新低的阳线即‘大一(有效点)’；未来3天收盘价连续站在大一收盘价之上且第3天创新高=‘小三确认’，1+3正式形成，代表机构上涨意图被确认。下跌1+3反过来：创新高阴线做大一+三天收盘确认且第3天创新低。突破确认也用同样逻辑。" },
+        { title: "六大板块结合用", body: "趋势判断(板块三)定大方向→动量反转1+3(板块一)定买卖点→黑马四阶段(板块二)定仓位与持有周期→震荡市用EA套利/高胜算(板块四/五)→趋势市用强者恒强(板块六)。学熟练后都套在一起用，不是孤立使用。" },
+        { title: "1+3止损与目标", body: "止损价=大一最低点×0.98(下移2%)，触发条件是‘收盘价跌破’大一最低点(下影线插破收上去不算)。最佳盈利空间50%–100%，不跌破大一最低点就持有，见顶信号(下跌1+3+高位放量滞涨+顶背离+破MA20)才离场。" },
+        { title: "简约原则 · 不看指标", body: "指标有延后性，呈现的是已走出来的行情，不预测。方法特别简单、没有模棱两可：买点、止损点、卖点在入场前全部确定，只需执行。所有‘跌破/突破’以收盘价为准。" },
+        { title: "全维度自上而下决策", body: "外部维度(宏观25%+周期20%+市场微观15%+链上15%+政策10%+赛道10%)用于‘预判’，1+3用于‘最终确认’。没有1+3确认，即使所有外部维度都看多也不入场；上涨1+3+宏观向上+周期向上=胜率80%+重仓，上涨1+3+宏观向下=轻仓或放弃。" }
+      ],
+      entry: [
+        "上涨1+3：最低点为创新低阳线(大一)，未来三天收盘价连续站在大一之上且第3天创新高",
+        "突破点=大一：突破前高的K线，后续小一小二小三确认=真突破，回踩突破区建仓",
+        "黑马出世：长期横盘/下跌≥30天后单日量≥60日均量2倍+大阳线≥5%突破，可结合1+3确认",
+        "趋势判断模型确认大方向为多头(高点低点逐步抬高)后，在回调买点介入",
+        "共振等级(技术/量能/衍生品/链上/情绪)≥3维同向时加仓"
+      ],
+      exit: [
+        "收盘价跌破止损价(大一最低点×0.98)立即离场，下影线插破收上去不算跌破",
+        "出现下跌1+3确认(创新高阴线+三天收盘创新低)=顶部确认，清仓多单",
+        "分批止盈：第一目标(3:1)减1/3移止损保本，第二目标(5:1)再减1/3，剩余跟踪",
+        "见顶信号：高位放量滞涨+顶背离+收盘破MA20+交易所净流入激增",
+        "假突破(无小三确认)不追高，警惕阶段性顶部"
+      ],
+      position: [
+        "小三区域建仓60–70%主仓，大一区域补仓30–40%",
+        "单笔风险≤总资金1–2%，仓位由共振等级决定(弱≤20%/中20–40%/强40–60%/超强60–80%)",
+        "单标的≤50%，同时持仓3–5个；牛市总仓60–80%、震荡30–50%、熊市0–30%",
+        "只在盈利头寸金字塔加仓，永不加仓亏损头寸",
+        "永远保留至少20%现金，不满仓"
+      ],
+      risk: [
+        "永远不扛单，到止损就走；‘跌破’以收盘价为准",
+        "永远不加仓亏损头寸；连续3笔亏损暂停1天复盘",
+        "单日亏损达5%停止当日交易",
+        "重大数据/事件前后1+3可靠性降低，等市场消化再确认",
+        "不抄底不猜顶，1+3就是右侧交易的精髓"
+      ],
+      ironRules: [
+        "一就是一，二就是二，只需执行",
+        "永远不扛单，收盘价跌破止损就走",
+        "永远不满仓，不加仓亏损头寸",
+        "单日亏5%停手，连续3笔亏损停1天"
+      ],
+      selfCorrection: [
+        "每笔结束回填：1+3信号是否成立、买卖点/止损/目标三要素是否按计划执行",
+        "对假突破/假1+3案例沉淀反例库，统计1+3信号成功率",
+        "每周复盘宏观/周期/微观/链上各维度预测准确率，淘汰无效指标",
+        "按盈亏归因：方向错/1+3确认错/仓位超→沉淀到策略参数"
+      ],
+      quotes: [
+        "一就是一，二就是二，只需执行。",
+        "有了大一才有小三，小三确认了才叫大一。",
+        "流动性越差越玩小市值，流动性越好越玩大市值。",
+        "收盘跌破才是跌破，下影线插破收上去不算。"
+      ],
+      course: {
+        title: "幻狐 · 机构操盘1+3右侧体系课",
+        modules: [
+          { title: "M1 认知重构：站在机构角度", points: ["市场是机构绘制的K线图谱，不是随机游走", "威科夫四阶段：吸筹→拉升→派发→下跌", "流动性与市值匹配原则", "小亏大赚、永不被套的目标"] },
+          { title: "M2 1+3模型（右侧精髓）", points: ["上涨1+3：创新低阳线大一+三天收盘确认且第3天创新高", "下跌1+3：创新高阴线大一+三天收盘创新低", "突破点=大一，小一小二小三确认真突破", "止损=大一最低点×0.98，收盘价跌破才走"] },
+          { title: "M3 六大板块结合用", points: ["板块三趋势判断定方向/板块一1+3定买卖点", "板块二黑马四阶段定仓位与持有周期", "震荡市EA套利+高胜算，趋势市强者恒强", "黑马共振五维度+周期共振加仓"] },
+          { title: "M4 全维度监控与风控铁律", points: ["宏观25%+周期20%+微观15%+链上15%+政策10%+赛道10%", "预判(外部)+确认(1+3)=高胜率", "单笔≤2%、不满仓、不加仓亏损头寸", "日亏5%停/连亏3笔停1天"] }
+        ]
+      },
+      sim: {
+        tags: ["trend", "1+3"],
+        coinsA: ["BTC", "ETH", "SOL"],
+        positionPct: 0.30,
+        riskPerTradePct: 0.02,
+        rrMin: 3.0,
+        holdMaxTicks: 80
+      }
     }
   ];
 
@@ -713,7 +797,8 @@ ul.rules li{margin:4px 0}
 /*
  * 道场模拟盘引擎（浏览器 + Node 共用，UMD）
  * - 确定性多币市场模型（seed 可复现）
- * - 5 位 AI 主理人策略（由 KOL 交易体系蒸馏得来）
+ * - 6 位 AI 主理人策略（由 KOL 交易体系蒸馏得来）
+ * - 量化预判评分体系（趋势方向/强度/四阶段/全维度）+ 1+3形态检测
  * - 决策逻辑 + 自我纠错沉淀
  */
 (function (root, factory) {
@@ -754,7 +839,7 @@ ul.rules li{margin:4px 0}
     "BNB.PRO": { base: 0.03, vol: 0.05, drift: 0.00004, isMeme: true },
     "ARC.PUMP": { base: 0.0015, vol: 0.07, drift: 0.00003, isMeme: true }
   };
-  var REAL_COINS = ["BTC", "ETH", "SOL"]; // 锚定真实行情的币种
+  var REAL_COINS = ["BTC", "ETH", "SOL", "BNB", "DOGE"]; // 锚定真实行情的币种（主流币，不含meme/黑马）
 
   function initMarket(seed) {
     var rng = mulberry32(seed);
@@ -868,9 +953,118 @@ ul.rules li{margin:4px 0}
   function rng_global() { return RNG ? RNG() : Math.random(); }
   function stateTick() { return _tick; }
 
+  // ---------- 量化预判评分体系（幻狐第7/8章蒸馏） ----------
+  // 趋势方向：-100(极空) ~ +100(极多)
+  function calcTrendDirection(c) {
+    var score = 0;
+    var smaRatio = (c.sma5 - c.sma20) / c.sma20;
+    score += clamp(smaRatio * 2000, -40, 40);
+    var priceRatio = (c.price - c.sma20) / c.sma20;
+    score += clamp(priceRatio * 1500, -30, 30);
+    score += (c.rsi - 50) * 0.6;
+    return Math.round(clamp(score, -100, 100));
+  }
+  // 趋势强度：0(无趋势) ~ 100(极强)
+  function calcTrendStrength(c) {
+    var score = 0;
+    var smaSpread = Math.abs(c.sma5 - c.sma20) / c.sma20;
+    score += clamp(smaSpread * 1000, 0, 30);
+    score += clamp((c.volSpike - 0.3) * 20, 0, 25);
+    score += Math.abs(c.rsi - 50) * 0.5;
+    score += (c.regime !== 0) ? 20 : 0;
+    return Math.round(clamp(score, 0, 100));
+  }
+  // 黑马四阶段：1=启动 2=加速 3=高潮 4=退潮
+  function calcPhase(c) {
+    var smaSpread = Math.abs((c.sma5 - c.sma20) / c.sma20);
+    if (c.rsi > 70 && c.volSpike > 1.8) return 3;
+    if (smaSpread < 0.005 && c.rsi < 45 && c.regime !== 1) return 4;
+    if (smaSpread >= 0.003 && c.volSpike >= 1.0) return 2;
+    if (smaSpread < 0.003 && c.volSpike < 1.2) return 1;
+    return smaSpread >= 0.003 ? 2 : 1;
+  }
+  // 全维度综合评分：-100 ~ +100
+  // 宏观25% + 周期20% + 微观15% + 链上15% + 政策10% + 赛道10%
+  function calcDimensionScore(c, coins) {
+    var macroScore = 0;
+    if (coins && coins["BTC"]) {
+      var btc = coins["BTC"];
+      var btcMacro = (btc.sma5 > btc.sma20 * 1.002) ? 1 : (btc.sma5 < btc.sma20 * 0.998 ? -1 : 0);
+      macroScore = btcMacro * 100;
+    }
+    var cycleScore = (c.rsi - 50) * 2;
+    var microScore = clamp(((c.price - c.sma20) / c.sma20 * 3000) + (c.regime * 40), -100, 100);
+    var chainScore = 0;
+    if (c.isMeme) {
+      chainScore = clamp((c.heat - 50) * 2 + (c.smartMoney - 15) * 3, -100, 100);
+    } else {
+      chainScore = clamp((c.smartMoney - 10) * 5, -50, 50);
+    }
+    var policyScore = clamp((c.volSpike - 1) * 60, -100, 100);
+    var sectorScore = 0;
+    if (coins && coins["BTC"] && c.sym !== "BTC") {
+      var btcH = coins["BTC"].hist;
+      var btcRet = btcH.length >= 6 ? (coins["BTC"].price / btcH[btcH.length - 6] - 1) : 0;
+      var cRet = c.hist.length >= 6 ? (c.price / c.hist[c.hist.length - 6] - 1) : 0;
+      sectorScore = clamp((cRet - btcRet) * 500, -100, 100);
+    }
+    var total = macroScore * 0.25 + cycleScore * 0.20 + microScore * 0.15 + chainScore * 0.15 + policyScore * 0.10 + sectorScore * 0.10;
+    return Math.round(clamp(total, -100, 100));
+  }
+
+  // ---------- 1+3 形态检测（幻狐核心模型） ----------
+  // 返回 {pattern, bigOne, smallThree, direction}
+  // pattern: "1+3_long_confirm" | "1+3_long_pending" | "1+3_short_confirm" | "1+3_short_pending" | "none"
+  function detectPattern131(c) {
+    var h = c.hist;
+    var n = h.length;
+    if (n < 8) return { pattern: "none", bigOne: null, smallThree: null, direction: 0 };
+    // === 做多1+3：找"大一"(近期新低后反弹) → 检查"小三"(后续3根收盘均在大一之上) ===
+    var biL = -1, lowL = Infinity;
+    for (var i = Math.max(1, n - 7); i < n - 3; i++) {
+      if (h[i] < lowL && h[i] < h[i - 1] && h[i + 1] > h[i]) { lowL = h[i]; biL = i; }
+    }
+    if (biL >= 0) {
+      var okL = true;
+      for (var j = biL + 1; j < Math.min(biL + 4, n); j++) { if (h[j] <= lowL) { okL = false; break; } }
+      if (okL) {
+        var preHighL = -Infinity;
+        for (var k = Math.max(0, biL - 3); k <= biL; k++) { if (h[k] > preHighL) preHighL = h[k]; }
+        var newHighL = (biL + 3 < n) ? (h[biL + 3] > preHighL) : false;
+        if (newHighL) return { pattern: "1+3_long_confirm", bigOne: lowL, smallThree: true, direction: 1 };
+        return { pattern: "1+3_long_pending", bigOne: lowL, smallThree: true, direction: 1 };
+      }
+    }
+    // === 做空1+3：找"大一"(近期新高后回落) → 检查"小三"(后续3根收盘均在大一之下) ===
+    var biS = -1, highS = -Infinity;
+    for (var i2 = Math.max(1, n - 7); i2 < n - 3; i2++) {
+      if (h[i2] > highS && h[i2] > h[i2 - 1] && h[i2 + 1] < h[i2]) { highS = h[i2]; biS = i2; }
+    }
+    if (biS >= 0) {
+      var okS = true;
+      for (var j2 = biS + 1; j2 < Math.min(biS + 4, n); j2++) { if (h[j2] >= highS) { okS = false; break; } }
+      if (okS) {
+        var preLowS = Infinity;
+        for (var k2 = Math.max(0, biS - 3); k2 <= biS; k2++) { if (h[k2] < preLowS) preLowS = h[k2]; }
+        var newLowS = (biS + 3 < n) ? (h[biS + 3] < preLowS) : false;
+        if (newLowS) return { pattern: "1+3_short_confirm", bigOne: highS, smallThree: true, direction: -1 };
+        return { pattern: "1+3_short_pending", bigOne: highS, smallThree: true, direction: -1 };
+      }
+    }
+    return { pattern: "none", bigOne: null, smallThree: null, direction: 0 };
+  }
+
   // ---------- 视图 ----------
-  function viewCoin(c) {
-    return { sym: c.sym, price: c.price, sma5: c.sma5, sma20: c.sma20, rsi: c.rsi, atr: c.atr, iv: c.iv, heat: c.heat, smartMoney: c.smartMoney, rug: c.rug, isMeme: c.isMeme, volSpike: c.volSpike, regime: c.regime };
+  function viewCoin(c, coins) {
+    return {
+      sym: c.sym, price: c.price, sma5: c.sma5, sma20: c.sma20, rsi: c.rsi, atr: c.atr, iv: c.iv,
+      heat: c.heat, smartMoney: c.smartMoney, rug: c.rug, isMeme: c.isMeme, volSpike: c.volSpike, regime: c.regime,
+      trendScore: calcTrendDirection(c),
+      trendStrength: calcTrendStrength(c),
+      phase: calcPhase(c),
+      dimensionScore: calcDimensionScore(c, coins),
+      pattern131: detectPattern131(c)
+    };
   }
 
   // ---------- 执行动作（直接改动 manager 并写决策日志） ----------
@@ -1031,6 +1225,7 @@ ul.rules li{margin:4px 0}
     else if (profile.id === "laomao") ev = decideLaomao(profile, mgr, coins, rng);
     else if (profile.id === "aoying") ev = decideAoying(profile, mgr, coins, rng);
     else if (profile.id === "hongqigong") ev = decideHongqigong(profile, mgr, coins, rng);
+    else if (profile.id === "huanhu") ev = decideHuanhu(profile, mgr, coins, rng);
     return ev;
   }
 
@@ -1166,6 +1361,101 @@ ul.rules li{margin:4px 0}
     return ev;
   }
 
+  // 幻狐：机构1+3右侧交易（评分+形态驱动版）
+  // 入场条件：1+3形态确认 + 趋势方向评分 + 趋势强度 + 全维度综合评分门槛
+  // 离场条件：反向1+3确认 / 趋势评分反转 / 阶段4退潮 / 硬止损
+  function decideHuanhu(p, mgr, coins, rng) {
+    var ev = [];
+    if (mgr.dayTrades >= 3) return ev;
+    if (mgr.dayLosses >= 3) return ev;
+    var rrMin = p.sim.rrMin || 3.0;
+    // ① 持仓管理：形态失效 + 评分反转 + 阶段退潮 + 硬止损
+    for (var k = mgr.positions.length - 1; k >= 0; k--) {
+      var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
+      var pf = profit(pos, cc);
+      var v = viewCoin(cc, coins);
+      var pat = v.pattern131;
+      // 反向1+3确认 → 形态失效，纪律离场
+      if (pos.side === "long" && pat.pattern === "1+3_short_confirm") {
+        ev.push(closePosition(mgr, pos, cc, "下跌1+3确认→多头形态失效，纪律离场不扛单"));
+        continue;
+      }
+      if (pos.side === "short" && pat.pattern === "1+3_long_confirm") {
+        ev.push(closePosition(mgr, pos, cc, "上涨1+3确认→空头形态失效，纪律离场不扛单"));
+        continue;
+      }
+      // 趋势评分反转 + 浮亏 → 止损
+      if ((v.trendScore < -40 && pos.side === "long" && pf < -0.02) ||
+          (v.trendScore > 40 && pos.side === "short" && pf < -0.02)) {
+        ev.push(closePosition(mgr, pos, cc, "趋势评分反转(" + v.trendScore + ")，1+3止损纪律"));
+        continue;
+      }
+      // 硬止损 -12%
+      if (pf < -0.12) {
+        ev.push(closePosition(mgr, pos, cc, "硬止损-12%，不扛单"));
+        continue;
+      }
+      // 阶段4退潮 + 高盈利 → 分批止盈
+      if (pf > 0.25 && v.phase === 4) {
+        ev.push(closePosition(mgr, pos, cc, "阶段4退潮+浮盈" + Math.round(pf * 100) + "%，分批止盈锁定利润"));
+        continue;
+      }
+      // 阶段3高潮 + 极高盈利 → 落袋
+      if (pf > 0.4 && v.phase === 3) {
+        ev.push(closePosition(mgr, pos, cc, "阶段3高潮+浮盈" + Math.round(pf * 100) + "%，落袋为安"));
+        continue;
+      }
+      // 持有周期到期
+      if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) {
+        ev.push(closePosition(mgr, pos, cc, "持有周期到期，移动止盈离场"));
+      }
+    }
+    // ② 右侧入场：1+3形态确认 + 评分门槛
+    if (mgr.positions.length >= 3) return ev;
+    var cands = [];
+    for (var i = 0; i < p.sim.coinsA.length; i++) {
+      var c = coins[p.sim.coinsA[i]]; if (!c) continue;
+      var v2 = viewCoin(c, coins);
+      var pat2 = v2.pattern131;
+      // 全维度评分门槛：综合评分绝对值≥25才考虑入场
+      if (Math.abs(v2.dimensionScore) < 25) continue;
+      // 趋势强度门槛：≥30
+      if (v2.trendStrength < 30) continue;
+      // 1+3做多确认
+      if (pat2.pattern === "1+3_long_confirm" && v2.trendScore > 25) {
+        var rr = rrMin + rng() * 1.5;
+        var sc = v2.dimensionScore * 0.35 + v2.trendScore * 0.30 + v2.trendStrength * 0.20 + (v2.volSpike > 1.1 ? 15 : 0) + (v2.phase === 2 ? 10 : 0);
+        cands.push({ c: c, side: "long", rr: rr, score: sc, pat: pat2, v: v2 });
+      }
+      // 1+3做空确认
+      if (pat2.pattern === "1+3_short_confirm" && v2.trendScore < -25) {
+        var rr2 = rrMin + rng() * 1.5;
+        var sc2 = Math.abs(v2.dimensionScore) * 0.35 + Math.abs(v2.trendScore) * 0.30 + v2.trendStrength * 0.20 + (v2.volSpike > 1.1 ? 15 : 0) + (v2.phase === 2 ? 10 : 0);
+        cands.push({ c: c, side: "short", rr: rr2, score: sc2, pat: pat2, v: v2 });
+      }
+    }
+    if (!cands.length) {
+      // 无1+3确认 → 观望（附带评分快照，让看板可解释为什么不出手）
+      if (rng() < 0.06) {
+        var watch = coins[p.sim.coinsA[Math.floor(rng() * p.sim.coinsA.length)]];
+        if (watch) {
+          var wv = viewCoin(watch, coins);
+          var wpat = wv.pattern131;
+          var patLabel = wpat.pattern !== "none" ? wpat.pattern : "无1+3形态";
+          ev.push({ type: "1_3_watch", coin: watch.sym,
+            rationale: "趋势" + wv.trendScore + "/强度" + wv.trendStrength + "/阶段" + wv.phase + "/维度" + wv.dimensionScore + "/" + patLabel + "，1+3未确认，观望" });
+        }
+      }
+      return ev;
+    }
+    cands.sort(function (a, b) { return b.score - a.score; });
+    var pick = cands[0];
+    var patName = (pick.pat.pattern.indexOf("long") >= 0) ? "上涨1+3确认" : "下跌1+3确认";
+    ev.push(openPerp(p, mgr, pick.c, pick.side, pick.rr,
+      patName + "：趋势" + pick.v.trendScore + "/强度" + pick.v.trendStrength + "/维度" + pick.v.dimensionScore + "/阶段" + pick.v.phase + "，盈亏比" + r2(pick.rr) + "≥3"));
+    return ev;
+  }
+
   // ---------- 每日复盘 ----------
   function rollDailyReview(mgr, profile, st) {
     var day = Math.floor((st.tick - 1) / TICK_PER_DAY); // 刚结束的交易日序号
@@ -1212,7 +1502,7 @@ ul.rules li{margin:4px 0}
         }
       }
       stepMarket(st.market, rng, realPrices);
-      st.priceHistory.push({ t: st.tick, BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price) });
+      st.priceHistory.push({ t: st.tick, BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price), BNB: r2(st.market.BNB.price), DOGE: r2(st.market.DOGE.price) });
       if (st.priceHistory.length > 6000) st.priceHistory.shift();
       for (var id in st.managers) {
         var mgr = st.managers[id]; var profile = PROFILES_BY_ID[id]; if (!profile) continue;
@@ -1463,12 +1753,13 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       };
     },
     chartMarket: function () {
-      var cats = []; var btc = []; var eth = []; var sol = [];
+      var cats = []; var btc = []; var eth = []; var sol = []; var bnb = []; var doge = [];
       for (var j = 0; j < state.priceHistory.length; j++) {
         var h = state.priceHistory[j];
         if (h.t <= horizon) {
           cats.push(h.t / TICK_PER_DAY);
           btc.push(h.BTC); eth.push(h.ETH); sol.push(h.SOL);
+          bnb.push(h.BNB); doge.push(h.DOGE);
         }
       }
       function norm(arr, base) { return arr.map(function (v) { return r2((v / base - 1) * 100); }); }
@@ -1482,7 +1773,9 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         series: [
           { name: "BTC", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(btc, btc[0] || 1) },
           { name: "ETH", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(eth, eth[0] || 1) },
-          { name: "SOL", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(sol, sol[0] || 1) }
+          { name: "SOL", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 2 }, data: norm(sol, sol[0] || 1) },
+          { name: "BNB", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(bnb, bnb[0] || 1) },
+          { name: "DOGE", type: "line", showSymbol: false, smooth: true, lineStyle: { width: 1.5, type: "dashed" }, data: norm(doge, doge[0] || 1) }
         ]
       };
     }
@@ -1554,9 +1847,9 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     for (var k = 0; k < rows.length; k++) {
       var r = rows[k];
       var isBlock = r.type === "iron_block";
-      var typeLabel = r.type === "open" ? "开仓" : (r.type === "close" ? "平仓" : (isBlock ? "铁律拦截" : r.type));
-      var typeCls = isBlock ? ' class="hl-red-bg"' : "";
-      var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : "";
+      var typeLabel = r.type === "open" ? "开仓" : (r.type === "close" ? "平仓" : (r.type === "1_3_watch" ? "1+3观望" : (isBlock ? "铁律拦截" : r.type)));
+      var typeCls = isBlock ? ' class="hl-red-bg"' : (r.type === "1_3_watch" ? ' class="hl-yellow"' : "");
+      var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : (r.type === "1_3_watch" ? '<span class="tag" style="background:#fff3cd;color:#856404">观望</span> ' : "");
       html += '<tr><td style="color:' + r.color + '">' + r.name + '</td><td>' + r.day + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
         '</td><td>' + r.side + '</td><td>' + r.detail + '</td><td class="rat">' + r.rationale + '</td></tr>';
     }
@@ -1734,7 +2027,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       }).join("\n");
       snap += "\n已推进 " + day(state.tick) + " 天。";
     } catch (e) { snap = ""; }
-    return "你是「AI主理·实盘道场/期权演武场」看板的交易军师，熟悉五位 KOL 体系（蓝鸟会/狙击手/老猫/熬鹰/洪七公）。\n" +
+    return "你是「AI主理·实盘道场/期权演武场」看板的交易军师，熟悉六位 KOL 体系（蓝鸟会/狙击手/老猫/熬鹰/幻狐/洪七公）。\n" +
       "请基于下方实时快照与用户问题，给出简明的解读、归因或操作建议；涉及具体策略时点出对应主理人的规则铁律。回答用中文、简洁、分点。\n" + snap;
   }
 
