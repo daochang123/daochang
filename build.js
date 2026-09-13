@@ -280,8 +280,8 @@ ${CSS}
 
       <section class="dashboard-panel note-panel" id="aiChatPanel">
         <div class="panel-head">
-          <div><div class="panel-title">AI 对话</div><div class="panel-sub">agnès 模型 · 优先 3.0-flash，不通自动回退 2.5-flash · 可结合当前模拟盘上下文</div></div>
-          <div class="panel-menu"><button class="menu-btn" onclick="showSource('AI 对话','前端调 OpenAI Chat Completions：POST https://api.agnes-ai.cn/v1/chat/completions（model=agnes-3.0-flash 优先，失败自动切 agnes-2.5-flash）。','系统提示注入当前 5 位主理人权益/回撤/持仓等实时快照，使 AI 能就模拟盘表现给出解读与建议；对话为多轮上下文。')" title="查看数据来源">⋮</button><button class="icon-btn" id="aiChatClear" title="清空对话">↺</button></div>
+          <div><div class="panel-title">AI 对话</div><div class="panel-sub">agnès 模型 · 优先 3.0-flash，不通自动回退 2.5-flash → DeepSeek V4 flash · 可结合当前模拟盘上下文</div></div>
+          <div class="panel-menu"><button class="menu-btn" onclick="showSource('AI 对话','前端调 OpenAI Chat Completions：优先 POST https://api.agnes-ai.cn/v1/chat/completions（model=agnes-3.0-flash），失败自动切 agnes-2.5-flash，再失败切 DeepSeek V4 flash（https://api.deepseek.com/v1，需配置 DeepSeek API Key）。','系统提示注入当前 6 位主理人权益/回撤/持仓等实时快照，使 AI 能就模拟盘表现给出解读与建议；对话为多轮上下文。')" title="查看数据来源">⋮</button><button class="icon-btn" id="aiChatClear" title="清空对话">↺</button></div>
         </div>
         <div class="ai-chat">
           <div class="ai-chat-log" id="aiChatLog"></div>
