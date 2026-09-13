@@ -155,6 +155,7 @@ ul.rules li{margin:4px 0}
       <input id="rangeEnd" type="number" min="0" value="60" title="结束天" />
     </div>
     <span class="active-range" id="activeRangeLabel">第 0 – 0 天</span>
+    <button class="icon-btn" id="refreshBtn" title="刷新数据（拉取最新快照）">↻</button>
     <button class="icon-btn" id="themeBtn" title="切换主题">◐</button>
   </div>
 </div>
@@ -1819,6 +1820,26 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     aiAppend("sys", "对话已清空。");
   }
 
+  // ---------- 刷新数据 ----------
+  function refreshData() {
+    var btn = $("refreshBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "⟳"; btn.style.opacity = 0.5; }
+    // 强制绕过缓存拉最新快照
+    fetch("data/latest.json?v=" + Date.now(), { cache: "no-store" })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .catch(function () { return null; })
+      .then(function (live) {
+        if (live && live.managers && typeof live.tick === "number" && live.market) {
+          bootWithLiveState(live);
+          if (btn) { btn.textContent = "✓"; setTimeout(function () { btn.textContent = "↻"; btn.disabled = false; btn.style.opacity = 1; }, 1500); }
+        } else {
+          // 回退确定性推演
+          bootDeterministic();
+          if (btn) { btn.textContent = "✗"; setTimeout(function () { btn.textContent = "↻"; btn.disabled = false; btn.style.opacity = 1; }, 1500); }
+        }
+      });
+  }
+
   // ---------- 事件绑定 ----------
   function bindEvents() {
     document.querySelectorAll("[data-range-preset]").forEach(function (b) {
@@ -1827,6 +1848,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     $("rangeStart").addEventListener("change", applyCustom);
     $("rangeEnd").addEventListener("change", applyCustom);
     $("themeBtn").addEventListener("click", toggleTheme);
+    $("refreshBtn").addEventListener("click", refreshData);
     $("mgClose").addEventListener("click", closeDrawer);
     $("modalClose").addEventListener("click", closeModal);
     $("copySnippet").addEventListener("click", function () { copyText("modalSnippet"); });
