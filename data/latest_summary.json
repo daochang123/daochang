@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T07:03:11.185Z",
+  "generated_at": "2026-09-13T07:08:15.814Z",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
   "startEquity": 1000,
@@ -7,11 +7,17 @@
   "day": 0,
   "realPriceMode": true,
   "realPrices": {
-    "BTC": 77134.01,
-    "ETH": 2513.23,
-    "SOL": 101.26,
-    "BNB": 722.18,
-    "DOGE": 0.08445
+    "BTC": 77171.97,
+    "ETH": 2514.89,
+    "SOL": 101.37,
+    "BNB": 722.54,
+    "DOGE": 0.08449,
+    "PEPE": 0.00000344,
+    "SHIB": 0.00000525,
+    "WIF": 0.1895,
+    "BONK": 0.00000281,
+    "FLOKI": 0.0000247,
+    "MEME": 0.000541
   },
   "managers": [
     {
