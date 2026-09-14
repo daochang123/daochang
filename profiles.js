@@ -85,7 +85,7 @@
         positionPct: 0.20,
         riskPerTradePct: 0.08,
         rrMin: 2.0,
-        holdMaxTicks: 40
+        holdMaxTicks: 30
       }
     },
     {
@@ -163,7 +163,7 @@
         positionPct: 0.25,
         riskPerTradePct: 0.025,
         rrMin: 1.5,
-        holdMaxTicks: 60
+        holdMaxTicks: 48
       }
     },
     {
@@ -242,7 +242,7 @@
         positionPct: 0.15,
         riskPerTradePct: 0.02,
         rrMin: 2.0,
-        holdMaxTicks: 120
+        holdMaxTicks: 96
       }
     },
     {
@@ -320,7 +320,7 @@
         positionPct: 0.35,
         riskPerTradePct: 0.03,
         rrMin: 1.2,
-        holdMaxTicks: 18
+        holdMaxTicks: 14
       }
     },
     {
@@ -399,7 +399,7 @@
         positionPct: 0.05,
         riskPerTradePct: 0.03,
         rrMin: 1.5,
-        holdMaxTicks: 90
+        holdMaxTicks: 72
       }
     },
     {
@@ -482,7 +482,7 @@
         positionPct: 0.30,
         riskPerTradePct: 0.02,
         rrMin: 3.0,
-        holdMaxTicks: 80
+        holdMaxTicks: 64
       }
     }
   ];
