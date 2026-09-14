@@ -183,10 +183,11 @@
       if (isMajor || isMajorDd) {
         badge = '<span class="tag ' + ((isMajor && r.pnl >= 0) || isMajorDd ? "tag-red" : "tag-green") + '">' + (isMajor && r.pnl >= 0 ? "盈利大增" : (isMajor ? "亏损预警" : "重大回撤")) + '</span> ';
       }
+      var pnlAbs = (r.pnl >= 0 ? "+" : "") + r2(r.pnl) + "U";
       html += '<section class="kpi-tile" data-id="' + r.id + '" style="--c:' + r.color + '">' +
         '<div class="kpi-top"><span class="kpi-name">' + r.name + '</span><span class="kpi-arena">' + r.arena + '</span></div>' +
         '<div class="kpi-value' + (isMajor && r.pnl < 0 ? " hl-red" : (isMajor && r.pnl >= 0 ? " hl-green" : "")) + '">' + r2(r.equity) + '<span class="kpi-unit">U</span></div>' +
-        '<div class="kpi-delta ' + cls + '">' + arrow + " " + pct(r.pnlPct) + '</div>' +
+        '<div class="kpi-delta ' + cls + '">' + arrow + " " + pct(r.pnlPct) + ' <span style="font-size:11px;opacity:0.8">(' + pnlAbs + ')</span></div>' +
         badge +
         '<div class="kpi-meta">交易 ' + r.trades + " · 胜率 " + pct(r.winRate) + '</div>' +
         '<div class="kpi-meta">回撤 -' + pct(r.maxDrawdown) + " · 持仓 " + r.open + '</div>' +
@@ -220,6 +221,7 @@
       var rankIcon = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : rank));
       var pnlClass = r.pnlPct >= 0 ? "up" : "down";
       var pnlSign = r.pnlPct >= 0 ? "+" : "";
+      var pnlAbs = pnlSign + r2(r.pnl) + "U";
       html += '<div class="ranking-item">' +
         '<div class="ranking-rank ' + rankClass + '">' + rankIcon + '</div>' +
         '<div class="ranking-info">' +
@@ -233,7 +235,7 @@
           '</div>' +
         '</div>' +
         '<div class="ranking-equity">' + r2(r.equity) + 'U</div>' +
-        '<div class="ranking-pnl ' + pnlClass + '">' + pnlSign + pct(r.pnlPct) + '</div>' +
+        '<div class="ranking-pnl ' + pnlClass + '">' + pnlSign + pct(r.pnlPct) + '<div style="font-size:11px;opacity:0.8">' + pnlAbs + '</div></div>' +
         '</div>';
     }
     el.innerHTML = html;
