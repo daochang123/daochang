@@ -46,6 +46,18 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .active-range{font-size:12px;color:var(--muted);white-space:nowrap}
 .icon-btn{border:1px solid var(--line-strong);background:var(--page);color:var(--muted);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px}
 .icon-btn:hover{color:var(--accent)}
+.live-bar{display:flex;align-items:center;gap:12px;background:var(--soft);border-bottom:1px solid var(--line);padding:6px 20px}
+.live-bar-tag{font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.live-bar-tag .pulse{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:livePulse 1.2s infinite}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-track{display:flex;gap:18px;overflow-x:auto;white-space:nowrap;flex:1;scrollbar-width:none}
+.live-track::-webkit-scrollbar{display:none}
+.live-item{display:inline-flex;align-items:baseline;gap:6px;font-size:12px;color:var(--muted)}
+.live-item .sym{font-weight:600;color:var(--ink)}
+.live-item .px{font-variant-numeric:tabular-nums;color:var(--ink)}
+.live-item.up .chg{color:#16a34a;font-weight:600}
+.live-item.down .chg{color:#dc2626;font-weight:600}
+.live-stamp{font-size:11px;color:var(--faint);white-space:nowrap}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -177,6 +189,12 @@ ul.rules li{margin:4px 0}
     <button class="icon-btn" id="refreshBtn" title="刷新数据（拉取最新快照）">↻</button>
     <button class="icon-btn" id="themeBtn" title="切换主题">◐</button>
   </div>
+</div>
+
+<div class="live-bar">
+  <span class="live-bar-tag"><span class="pulse"></span>实时行情</span>
+  <div class="live-track" id="liveTrack">正在连接 Binance 实时行情…</div>
+  <span class="live-stamp" id="liveStamp"></span>
 </div>
 
 <main class="dashboard-shell">
@@ -1160,16 +1178,37 @@ ul.rules li{margin:4px 0}
 
   function maxLevFor(profile, c) {
     if (profile.id === "aoying") {
-      // 熬鹰「低杠杆复利」蒸馏规则：大饼≤5x(实盘给3x)、主流山寨1.5x、meme 1x
+      // 熬鹰「低杠杆复利」铁律：大饼≤3x、主流山寨1.5x、meme 1x；即便黑马也永不突破（策略纪律优先）
       if (c && c.isMeme) return 1;
       if (c && c.sym === "BTC") return 3;
       return 1.5;
     }
-    return 3;
+    if (profile.id === "laomao") return 2;       // 老猫：滚仓复利，本金利润分离，保守上车
+    if (profile.id === "lanniaohui") return 3;   // 蓝鸟会：meme 合约谨慎，小仓试错
+    if (profile.id === "sniper") return 3;       // 狙击手：三重确认，中等杠杆
+    return 3;                                     // 幻狐/洪七公等默认
+  }
+
+  // 黑马信心评分(0-100)：均线完美排列 + 量能爆发 + 趋势状态 + 价格偏离 + IV适中 的多重共振
+  function blackHorseConfidence(c) {
+    var conf = 0;
+    var bull = c.sma5 > c.sma20 && c.sma20 > c.sma50;
+    var bear = c.sma5 < c.sma20 && c.sma20 < c.sma50;
+    if (bull || bear) conf += 30;                       // 均线多头/空头完美排列
+    conf += Math.min(Math.abs(c.rsi - 50) / 30, 1) * 15; // 动量（不冷不热最健康）
+    if (c.volSpike >= 1.3) conf += 20; else if (c.volSpike >= 1.0) conf += 10; // 量能爆发
+    if (typeof c.regime === "number" && c.regime !== 0) conf += 15; // 趋势状态（非震荡）
+    var dev = Math.abs(c.price - c.sma20) / c.sma20;    // 价格相对20周期均线的爆发偏离
+    conf += Math.min(dev / 0.03, 1) * 15;
+    if (c.iv <= 60) conf += 5; else if (c.iv <= 80) conf += 2; // IV 适中留爆发空间
+    return Math.min(conf, 100);
   }
 
   function openPerp(profile, mgr, c, side, rr, rationale) {
-    var cap = maxLevFor(profile, c);
+    var cap = Math.min(maxLevFor(profile, c), 5);     // 默认硬上限 5x
+    var bh = blackHorseConfidence(c);
+    var blackHorse = bh >= 80 && profile.id !== "aoying"; // 黑马且≥80%把握，非熬鹰(铁律禁高杠杆)
+    if (blackHorse) cap = 8;                            // 黑马突破：上限放宽至 8x
     var lev = cap * (0.7 + rng_global() * 0.6);
     lev = Math.max(1, Math.min(lev, cap));
     var margin = mgr.cash * (profile.sim.positionPct || 0.25);
@@ -1227,7 +1266,7 @@ ul.rules li{margin:4px 0}
       kind: "perp", coin: c.sym, side: side, qty: qty, margin: margin, notional: margin * lev,
       entry: c.price, leverage: lev, openTick: stateTick(), rr: rr,
       sl: slPrice, tp: tpPrice,
-      rationale: rationale + " | 止损:" + r2(slPrice) + "(" + slReason + ") 目标:" + r2(tpPrice) + "(" + tpReason + ")"
+      rationale: rationale + (blackHorse ? " | 黑马突破：杠杆上限8x(信心" + Math.round(bh) + "%≥80%)" : " | 常规杠杆≤5x(信心" + Math.round(bh) + "%)") + " | 止损:" + r2(slPrice) + "(" + slReason + ") 目标:" + r2(tpPrice) + "(" + tpReason + ")"
     };
     mgr.cash -= margin; mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
@@ -2015,13 +2054,20 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         badge = '<span class="tag ' + ((isMajor && r.pnl >= 0) || isMajorDd ? "tag-red" : "tag-green") + '">' + (isMajor && r.pnl >= 0 ? "盈利大增" : (isMajor ? "亏损预警" : "重大回撤")) + '</span> ';
       }
       var pnlAbs = (r.pnl >= 0 ? "+" : "") + r2(r.pnl) + "U";
+      var mgr = state.managers[r.id];
+      var held = "空仓";
+      if (mgr && mgr.positions && mgr.positions.length) {
+        var seen = {}, syms = [];
+        for (var pi = 0; pi < mgr.positions.length; pi++) { var pc = mgr.positions[pi].coin; if (!seen[pc]) { seen[pc] = 1; syms.push(pc); } }
+        held = syms.join("·");
+      }
       html += '<section class="kpi-tile" data-id="' + r.id + '" style="--c:' + r.color + '">' +
         '<div class="kpi-top"><span class="kpi-name">' + r.name + '</span><span class="kpi-arena">' + r.arena + '</span></div>' +
         '<div class="kpi-value' + (isMajor && r.pnl < 0 ? " hl-red" : (isMajor && r.pnl >= 0 ? " hl-green" : "")) + '">' + r2(r.equity) + '<span class="kpi-unit">U</span></div>' +
         '<div class="kpi-delta ' + cls + '">' + arrow + " " + pct(r.pnlPct) + ' <span style="font-size:11px;opacity:0.8">(' + pnlAbs + ')</span></div>' +
         badge +
         '<div class="kpi-meta">交易 ' + r.trades + " · 胜率 " + pct(r.winRate) + '</div>' +
-        '<div class="kpi-meta">回撤 -' + pct(r.maxDrawdown) + " · 持仓 " + r.open + '</div>' +
+        '<div class="kpi-meta">回撤 -' + pct(r.maxDrawdown) + " · 持仓 " + r.open + "：" + held + '</div>' +
         '</section>';
     }
     el.innerHTML = html;
@@ -2053,6 +2099,13 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       var pnlClass = r.pnlPct >= 0 ? "up" : "down";
       var pnlSign = r.pnlPct >= 0 ? "+" : "";
       var pnlAbs = pnlSign + r2(r.pnl) + "U";
+      var m2 = state.managers[r.id];
+      var held2 = "空仓";
+      if (m2 && m2.positions && m2.positions.length) {
+        var seen2 = {}, syms2 = [];
+        for (var pj = 0; pj < m2.positions.length; pj++) { var pc2 = m2.positions[pj].coin; if (!seen2[pc2]) { seen2[pc2] = 1; syms2.push(pc2); } }
+        held2 = syms2.join("·");
+      }
       html += '<div class="ranking-item">' +
         '<div class="ranking-rank ' + rankClass + '">' + rankIcon + '</div>' +
         '<div class="ranking-info">' +
@@ -2061,7 +2114,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
             '<span>交易 ' + r.trades + '</span>' +
             '<span>胜率 ' + pct(r.winRate) + '</span>' +
             '<span>回撤 -' + pct(r.maxDrawdown) + '</span>' +
-            '<span>持仓 ' + r.open + '</span>' +
+            '<span>持仓 ' + r.open + '（' + held2 + '）</span>' +
             '<span>进化 ' + r.evolution + '</span>' +
           '</div>' +
         '</div>' +
@@ -2426,6 +2479,44 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     renderIronRules(); renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
   }
 
+  // ---------- 实时行情（Binance WebSocket，秒级 · 参考行情，不参与每小时结算） ----------
+  function initLiveTicker() {
+    var track = $("liveTrack");
+    if (!track || !("WebSocket" in window)) return;
+    var SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "PEPEUSDT", "SHIBUSDT", "WIFUSDT", "BONKUSDT", "FLOKIUSDT", "MEMEUSDT"];
+    var data = {};
+    function fmtPx(p) {
+      if (p >= 1000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
+      if (p >= 1) return p.toFixed(2);
+      if (p >= 0.01) return p.toFixed(4);
+      if (p >= 0.0001) return p.toFixed(6);
+      return p.toFixed(8);
+    }
+    function render() {
+      var html = "";
+      for (var i = 0; i < SYMS.length; i++) {
+        var d = data[SYMS[i]];
+        if (!d) { html += '<span class="live-item"><span class="sym">' + SYMS[i].replace("USDT", "") + '</span><span class="px">—</span></span>'; continue; }
+        var p = parseFloat(d.c), chg = parseFloat(d.P);
+        var cls = chg >= 0 ? "up" : "down";
+        html += '<span class="live-item ' + cls + '"><span class="sym">' + d.s.replace("USDT", "") + '</span><span class="px">' + fmtPx(p) + '</span><span class="chg">' + (chg >= 0 ? "+" : "") + chg.toFixed(2) + '%</span></span>';
+      }
+      track.innerHTML = html;
+      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false });
+    }
+    function connect() {
+      var streams = SYMS.map(function (s) { return s.toLowerCase() + "@ticker"; }).join("/");
+      var ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=" + streams);
+      ws.onmessage = function (e) {
+        try { var m = JSON.parse(e.data); if (m.stream && m.data && m.data.s) { data[m.data.s] = m.data; render(); } } catch (err) {}
+      };
+      ws.onclose = function () { setTimeout(connect, 5000); };
+      ws.onerror = function () { try { ws.close(); } catch (e2) {} };
+    }
+    connect();
+    render();
+  }
+
   // 实时/云端快照模式：优先读取服务器按 12 小时推进生成的状态
   function bootWithLiveState(live) {
     state = live;
@@ -2454,6 +2545,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   function setupDashboardRuntime() {
     ENGINE.attachProfiles(PROFILES);
     bindEvents();
+    initLiveTicker();
     // 优先加载云端快照（服务端 data/latest.json），失败则回退确定性推演
     fetch("data/latest.json", { cache: "no-store" })
       .then(function (res) { return res.ok ? res.json() : null; })
