@@ -55,7 +55,7 @@
       coins[s] = {
         sym: s, price: p, hist: hist, drift: d.drift, vol: d.vol, base: d.base,
         isMeme: d.isMeme, heat: 40 + rng() * 30, smartMoney: 0, rug: 0, regime: 0,
-        sma5: p, sma20: p, rsi: 50, atr: d.vol * p, iv: 50, volSpike: 1
+        sma5: p, sma20: p, sma50: p, sma96: p, rsi: 50, atr: d.vol * p, iv: 50, volSpike: 1
       };
     }
     return coins;
@@ -87,19 +87,27 @@
         ret = c.drift + trendDrift + sigma * gauss(rng) + shock;
         c.price = Math.max(c.base * 0.05, c.price * Math.exp(ret));
       }
-      // ===== 公共指标更新（真实 & 合成共用） =====
+      // ===== 公共指标更新（真实 & 合成共用，时间尺度=1 tick=1小时） =====
       c.hist.push(c.price);
-      if (c.hist.length > 30) c.hist.shift();
+      if (c.hist.length > 100) c.hist.shift();
       var arr = c.hist, n = arr.length;
-      var sum5 = 0, sum20 = 0;
-      for (var i = 0; i < n; i++) { sum20 += arr[i]; if (i >= n - 5) sum5 += arr[i]; }
-      c.sma5 = sum5 / 5;
-      c.sma20 = sum20 / n;
-      var up = 0, dn = 0;
-      for (var i2 = 1; i2 < n; i2++) { var ch = arr[i2] - arr[i2 - 1]; if (ch >= 0) up += ch; else dn -= ch; }
+      function ma(win) { // 指定窗口均线（不足窗口用已有长度）
+        var w = Math.min(win, n) || 1, s = 0;
+        for (var mi = n - w; mi < n; mi++) s += arr[mi];
+        return s / w;
+      }
+      c.sma5 = ma(5);
+      c.sma20 = ma(20);
+      c.sma50 = ma(50);   // 近「50小时/2日」趋势线
+      c.sma96 = ma(96);   // 近「96小时/4日」长趋势线（长周期锚点）
+      // RSI(14)：标准14周期强弱指标
+      var win = Math.min(14, n), up = 0, dn = 0;
+      for (var i2 = Math.max(1, n - win); i2 < n; i2++) { var ch = arr[i2] - arr[i2 - 1]; if (ch >= 0) up += ch; else dn -= ch; }
       c.rsi = up + dn === 0 ? 50 : 100 * up / (up + dn);
-      var sumA = 0; for (var i3 = 1; i3 < n; i3++) sumA += Math.abs(arr[i3] - arr[i3 - 1]);
-      c.atr = (sumA / (n - 1)) || c.vol * c.price;
+      // ATR(14)
+      var winA = Math.min(14, n - 1), sumA = 0;
+      for (var i3 = Math.max(1, n - winA); i3 < n; i3++) sumA += Math.abs(arr[i3] - arr[i3 - 1]);
+      c.atr = (sumA / (winA || 1)) || c.vol * c.price;
       c.iv = clamp(30 + Math.abs(ret) / c.vol * 14 + rng() * 6, 25, 130);
       c.volSpike = clamp(Math.abs(ret) / c.vol, 0.3, 3);
       if (c.isMeme) {
@@ -260,7 +268,7 @@
   // ---------- 视图 ----------
   function viewCoin(c, coins) {
     return {
-      sym: c.sym, price: c.price, sma5: c.sma5, sma20: c.sma20, rsi: c.rsi, atr: c.atr, iv: c.iv,
+      sym: c.sym, price: c.price, sma5: c.sma5, sma20: c.sma20, sma50: c.sma50, sma96: c.sma96, rsi: c.rsi, atr: c.atr, iv: c.iv,
       heat: c.heat, smartMoney: c.smartMoney, rug: c.rug, isMeme: c.isMeme, volSpike: c.volSpike, regime: c.regime,
       trendScore: calcTrendDirection(c),
       trendStrength: calcTrendStrength(c),
@@ -447,10 +455,12 @@
       pos.margin = cost;         // 买方：已付权利金即最大风险
       mgr.cash -= cost;
     } else {
-      // 卖方：收到权利金，负债按市价逐日盯市，不扣押现金（风控字段仅展示）
-      mgr.cash += cost;
-      pos.margin = cost * maxWinRatio;
-      pos.sellerMaxLoss = cost * maxWinRatio;
+      // 卖方：收到权利金 + 冻结保证金（defined-risk 价差的最大亏损），保证金不可挪用
+      var sellerMargin = cost * maxWinRatio;
+      pos.margin = sellerMargin;
+      pos.sellerMaxLoss = sellerMargin;
+      mgr.cash += cost;          // 收到权利金
+      mgr.cash -= sellerMargin;  // 冻结保证金（占款，禁止开新仓挪用）
     }
     mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
@@ -464,7 +474,7 @@
     if (pos.kind === "option") {
       var ov = optionState(pos, c);
       if (pos.side === "buy") { pnl = ov.abs - pos.spent - fee; mgr.cash += ov.abs; }
-      else { pnl = pos.spent - ov.abs - fee; mgr.cash -= ov.abs; }
+      else { pnl = pos.spent - ov.abs - fee; mgr.cash += pos.margin; mgr.cash -= ov.abs; }
     } else if (pos.kind === "spot") {
       pnl = (c.price - pos.entry) * pos.qty * (pos.side === "long" ? 1 : -1) - fee;
       mgr.cash += pos.margin + pnl;
@@ -530,75 +540,104 @@
     for (var i = 0; i < p.sim.coinsA.length; i++) {
       var c = coins[p.sim.coinsA[i]]; if (!c) continue;
       var v = viewCoin(c);
-      rake.push({ coin: c.sym, redFlags: Math.round(v.rug), heat: v.heat, smartMoney: v.smartMoney, rug: v.rug });
+      // 「车头钱包进场强度」：聪明钱占比 + 热度水位 + 排雷红旗，合成多钱包同步建仓的代理信号
+      var whale = v.smartMoney * 1.2 + (v.heat > 50 ? (v.heat - 50) * 0.3 : 0) - v.rug * 6;
+      rake.push({ coin: c.sym, redFlags: Math.round(v.rug), heat: v.heat, smartMoney: v.smartMoney, rug: v.rug, whale: whale });
     }
-    // 持仓离场
+    // 持仓管理：退潮 / 排雷升级 / 落袋 + 阶梯加仓
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
-      if (cc.heat < 30 || cc.rug > 3.2) {
-        ev.push(closePosition(mgr, pos, cc, "叙事热度退潮/排雷触发，纪律离场"));
+      var pf = profit(pos, cc);
+      if (cc.heat < 25) { ev.push(closePosition(mgr, pos, cc, "叙事热度退潮(heat=" + Math.round(cc.heat) + ")，车头离场，纪律清仓")); continue; }
+      if (cc.rug > 3.5) { ev.push(closePosition(mgr, pos, cc, "排雷红旗升级(rug=" + Math.round(cc.rug) + ")，看不懂的盘不扛")); continue; }
+      if (pf > 0.6) { ev.push(closePosition(mgr, pos, cc, "浮盈" + Math.round(pf * 100) + "%，击球区兑现，落袋为安")); continue; }
+      if (pf > 0.25 && cc.heat > 55 && rng() < 0.30) {
+        ev.push(addPyramid(p, mgr, cc, pos, "盈利" + Math.round(pf * 100) + "%+热度攀升，阶梯加仓(小仓验证成功)"));
+        return ev;
       }
     }
-    rake.sort(function (a, b) { return (b.heat + b.smartMoney * 1.5 - b.rug * 3) - (a.heat + a.smartMoney * 1.5 - a.rug * 3); });
+    rake.sort(function (a, b) { return b.whale - a.whale; });
     var pass = rake.filter(function (r) { return r.redFlags < 3 && r.smartMoney >= 8; });
     var blocked = rake.filter(function (r) { return r.redFlags >= 3 || r.smartMoney < 8; });
-    if (blocked.length && rng() < 0.12) {
+    if (blocked.length && rng() < 0.14) {
       var b = blocked[Math.floor(rng() * blocked.length)];
       ev.push({ type: "iron_block", coin: b.coin, rationale: "九关排雷拒单：" + b.coin + " 红旗" + b.redFlags + "，看不懂的盘不买" });
     }
     if (mgr.positions.length >= 4) return ev;
     if (pass.length === 0) return ev;
     var best = pass[0]; var c = coins[best.coin];
+    // 击球区分层：强信号重拳出击 / 中信号小仓验证
+    var strong = best.smartMoney >= 15 && best.heat >= 55 && best.rug < 2.5;
     var rr = 2.0 + rng();
     ev.push(openSpot(p, mgr, c, "long", rr,
-      "钱包追踪命中(" + best.coin + ")热度" + r2(best.heat) + "/聪明钱" + r2(best.smartMoney) + "%/红旗" + best.redFlags + "，验证击球区小仓进场"));
+      (strong ? "击球区重拳" : "击球区小仓验证") + "(" + best.coin + ")热度" + r2(best.heat) + "/聪明钱" + r2(best.smartMoney) + "%/红旗" + best.redFlags + (strong ? "，车头钱包同步进场" : "，待验证再加仓")));
     return ev;
   }
 
   function decideSniper(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.dayTrades >= 8) return ev; // 激进调频：放宽每日出场上限
-    if (mgr.dayLosses >= 3) return ev; // 连亏3笔才停手，保持活性
+    if (mgr.dayTrades >= 8) return ev; // 日内扫描窗口上限
+    if (mgr.dayLosses >= 3) return ev; // 连亏3笔停手
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
-      if (profit(pos, cc) < -0.03) ev.push(closePosition(mgr, pos, cc, "硬风控：单笔亏损达阈值，执行纪律止损"));
+      if (profit(pos, cc) < -0.025) { ev.push(closePosition(mgr, pos, cc, "硬风控：单笔亏损达2.5%，执行纪律止损")); continue; }
+      if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) ev.push(closePosition(mgr, pos, cc, "达到持仓周期，纪律离场"));
     }
     if (mgr.positions.length >= 2) return ev;
     var candidates = [];
     for (var i = 0; i < p.sim.coinsA.length; i++) {
       var c = coins[p.sim.coinsA[i]]; if (!c) continue;
       var v = viewCoin(c);
-      var side = v.sma5 > v.sma20 ? "long" : "short";
-      var trig = Math.abs(v.price - v.sma5) / v.sma5;
-      var rr = 1.6 + rng() * 0.8;
-      if (trig > 0.004 && v.volSpike < 2.4 && rr >= 1.5) candidates.push({ c: c, side: side, rr: rr, score: trig });
+      // 环境过滤：波动率在合理区间，过低没肉、过高=噪音区硬开单
+      if (v.volSpike < 0.55 || v.volSpike > 2.0) continue;
+      // 大周期方向：trendScore 明确（±25 以上，多空皆可，非噪音）
+      var dir = 0;
+      if (v.trendScore >= 25) dir = 1; else if (v.trendScore <= -25) dir = -1;
+      if (dir === 0) continue;
+      // 小周期触发：收盘价沿大周期方向突破短均线
+      var side = dir > 0 ? "long" : "short";
+      var breakout = (v.price - v.sma5) / v.sma5 * dir;
+      if (breakout <= 0.002) continue;
+      var rr = 1.5 + rng() * 0.8;
+      if (rr < 1.5) continue;
+      candidates.push({ c: c, side: side, rr: rr, score: breakout * 10 + Math.abs(v.trendScore) * 0.2, v: v });
     }
     if (!candidates.length) return ev;
     candidates.sort(function (a, b) { return b.score - a.score; });
     var pick = candidates[0];
     ev.push(openPerp(p, mgr, pick.c, pick.side, pick.rr,
-      "三重确认：大周期方向(" + (pick.side === "long" ? "多头" : "空头") + ")+小周期触发+盈亏比" + r2(pick.rr) + "≥1.5"));
+      "三重确认：大周期" + (pick.v.trendScore >= 0 ? "多头" : "空头") + "(trendScore=" + pick.v.trendScore + ")+小周期突破+盈亏比" + r2(pick.rr) + "≥1.5"));
     return ev;
   }
 
   function decideLaomao(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.monthTrades >= 10) return ev; // 激进调频：放宽月度出手上限
+    if (mgr.monthTrades >= 12) return ev; // 月度出手上限（保命纪律）
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var c = coins[pos.coin]; if (!c) continue;
       var pnl = profit(pos, c);
-      if (pnl > 0.3 && pos.leverage < 1.6 && rng() < 0.10) {
-        ev.push(addPyramid(p, mgr, c, pos, "盈利" + r2(pnl * 100) + "%，正向金字塔加仓(1:0.6:0.3)"));
+      // 滚仓复利：浮盈≥20% 即正向金字塔加仓（本金利润分离，只滚多）
+      if (pnl > 0.20 && pos.leverage < 1.6 && rng() < 0.25) {
+        ev.push(addPyramid(p, mgr, c, pos, "盈利" + r2(pnl * 100) + "%，滚仓复利，正向金字塔加仓(1:0.6:0.3)"));
         return ev;
       }
-      if (pnl < -0.02 && c.sma5 < c.sma20) { ev.push(closePosition(mgr, pos, c, "50日线破位止损(三线定乾坤)")); }
+      // 三线破位：跌破中期趋势线（近50周期）止损
+      if (c.price < c.sma50) { ev.push(closePosition(mgr, pos, c, "跌破50周期趋势线，三线定乾坤纪律止损")); continue; }
+      // 高位缩量 = 出货信号，落袋为主
+      if (pnl > 0.4 && c.volSpike < 0.8) { ev.push(closePosition(mgr, pos, c, "高位缩量，出货信号，落袋为主")); continue; }
     }
     if (mgr.positions.length >= 2) return ev;
     for (var i = 0; i < p.sim.coinsA.length; i++) {
       var cc = coins[p.sim.coinsA[i]]; if (!cc) continue;
       var v = viewCoin(cc);
-      if (v.sma5 > v.sma20 && v.rsi > 50 && v.rsi < 70 && v.volSpike > 1.15) {
-        ev.push(openPerp(p, mgr, cc, "long", 2.2, "三线定乾坤：均线多头+量能放大+回踩，进趋势"));
+      // 三线定乾坤：长期转多(价>96周期) + 中期金叉(20周期上穿50周期) + 量能确认，金叉放量黄金买点
+      if (cc.price > cc.sma96 && cc.sma20 > cc.sma50 && v.volSpike > 1.0 && v.rsi > 50 && v.rsi < 72) {
+        ev.push(openPerp(p, mgr, cc, "long", 2.2, "三线定乾坤：站上96周期+20周期金叉50周期+量能放大，金叉放量黄金买点"));
+        return ev;
+      }
+      // 多周期回踩：4H方向仍多 + 价格回踩50周期趋势线附近 + 未破位
+      else if (cc.price > cc.sma96 && cc.price > cc.sma50 * 0.985 && cc.price < cc.sma50 * 1.02 && v.rsi > 45 && v.rsi < 60) {
+        ev.push(openPerp(p, mgr, cc, "long", 2.6, "多周期回踩：回踩50周期趋势线支撑未破，4H方向仍多，回踩确认买点"));
         return ev;
       }
     }
@@ -607,20 +646,41 @@
 
   function decideAoying(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.dayTrades >= 16) return ev;  // 激进调频：快进快出，持续捕捉短线
-    if (mgr.dayLosses >= 5) return ev;   // 连亏5笔才停手，保持活性
+    if (mgr.dayTrades >= 16) return ev;  // 快进快出，日内上限
+    if (mgr.dayLosses >= 5) return ev;   // 连亏5笔停手
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var c = coins[pos.coin]; if (!c) continue;
-      if (profit(pos, c) < -0.04) { ev.push(closePosition(mgr, pos, c, "短线止损：破位就砍，不扛单")); }
-      else if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) { ev.push(closePosition(mgr, pos, c, "短线快进快出，到达持仓周期离场")); }
+      var pf = profit(pos, c);
+      // 破位就砍，不扛单（低杠杆铁律1）
+      if (pf < -0.035) { ev.push(closePosition(mgr, pos, c, "短线止损：破位就砍，不扛单")); continue; }
+      // 移动止盈：浮盈高 → 落袋为安（不贪最后一个铜板）
+      if (pf > 0.5) { ev.push(closePosition(mgr, pos, c, "浮盈" + Math.round(pf * 100) + "%，分层止盈落袋，不贪最后一个铜板")); continue; }
+      if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) ev.push(closePosition(mgr, pos, c, "短线快进快出，持仓周期到，离场"));
     }
     if (mgr.positions.length >= 4) return ev;
-    var sym = rng() < 0.4 ? "BTC" : (rng() < 0.5 ? "ETH" : (rng() < 0.5 ? "SOL" : "DOGE"));
-    var c = coins[sym]; var v = viewCoin(c);
-    var side = v.regime === 1 ? "long" : (v.regime === -1 ? "short" : (v.rsi < 40 ? "long" : (v.rsi > 62 ? "short" : (v.sma5 > v.sma20 ? "long" : "short"))));
+    // 择优进场：全池扫描，选趋势/区间/极值信号最强的一个（不再随机抽币）
+    var candidates = [];
+    for (var i = 0; i < p.sim.coinsA.length; i++) {
+      var c2 = coins[p.sim.coinsA[i]]; if (!c2) continue;
+      var v = viewCoin(c2);
+      var side = "", score = 0, why = "";
+      // 物极必反：RSI 冰点抄底 / 过热逃顶（情绪信息差）
+      if (v.rsi < 32) { side = "long"; score = 55 - v.rsi + Math.abs(v.trendScore) * 0.3; why = "冰点抄底(RSI" + Math.round(v.rsi) + ")"; }
+      else if (v.rsi > 70) { side = "short"; score = v.rsi - 70 + Math.abs(v.trendScore) * 0.3; why = "FOMO逃顶(RSI" + Math.round(v.rsi) + ")"; }
+      // 顺势：趋势明确 + 站上/跌破短均线
+      else if (v.trendScore >= 30 && v.price > v.sma5) { side = "long"; score = v.trendScore; why = "顺势突破(trendScore" + v.trendScore + ")"; }
+      else if (v.trendScore <= -30 && v.price < v.sma5) { side = "short"; score = -v.trendScore; why = "顺势破位(trendScore" + v.trendScore + ")"; }
+      // 区间反抽：震荡区间高抛低吸
+      else if (v.regime === 0 && v.rsi > 52 && v.price < v.sma20) { side = "long"; score = 12; why = "区间回踩支撑做多"; }
+      else if (v.regime === 0 && v.rsi < 48 && v.price > v.sma20) { side = "short"; score = 12; why = "区间反抽压力做空"; }
+      if (side) candidates.push({ c: c2, side: side, score: score, why: why });
+    }
+    if (!candidates.length) return ev; // 无清晰机会，缩头乌龟
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    var pick = candidates[0];
     var rr = 1.2 + rng() * 0.8;
-    ev.push(openPerp(p, mgr, c, side, rr,
-      "突破/区间/反抽判断：RSI" + r2(v.rsi) + "，" + (side === "long" ? "做多" : "做空") + "，低杠杆波段"));
+    ev.push(openPerp(p, mgr, pick.c, pick.side, rr,
+      pick.why + "，低杠杆" + (pick.side === "long" ? "做多" : "做空") + "波段"));
     return ev;
   }
 
@@ -636,23 +696,32 @@
       return ev;
     }
     var pool = mgr.mode === "btc_only" ? ["BTC"] : ["BTC", "ETH", "SOL"];
-    var c = coins[pool[Math.floor(rng() * pool.length)]];
+    // 择优选标的：趋势越明确、IV 越适中，越值得出手（不再随机抽）
+    var pickC = null, pickScore = -Infinity;
+    for (var pi = 0; pi < pool.length; pi++) {
+      var c0 = coins[pool[pi]]; if (!c0) continue;
+      var vv = viewCoin(c0);
+      var sc = Math.abs(vv.trendScore) * 0.6 + Math.max(0, 55 - Math.abs(vv.iv - 50));
+      if (sc > pickScore) { pickScore = sc; pickC = c0; }
+    }
+    var c = pickC || coins[pool[Math.floor(rng() * pool.length)]];
     var v = viewCoin(c);
-    // 到期/止损
+    // 到期/止损：买方亏50%、卖方亏35%（尾部风险更大）保护性平仓
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
-      if (profit(pos, cc) < -0.5) { ev.push(closePosition(mgr, pos, cc, "卖方/买方风控：亏损达阈值，保护性平仓")); }
+      var lossLine = pos.side === "sell" ? -0.35 : -0.5;
+      if (profit(pos, cc) < lossLine) { ev.push(closePosition(mgr, pos, cc, (pos.side === "sell" ? "卖方尾部" : "买方方向") + "风控：亏损达阈值，保护性平仓")); }
     }
     if (mgr.positions.length >= 2) return ev;
     // 方向+波动率双轴（蒸馏核心逻辑）
-    var trend = v.regime; // 1=多 / -1=空 / 0=震荡
+    var trend = v.trendScore; // -100~+100
     var buy, side;
-    if (trend !== 0 && v.iv < 75) { buy = true; side = (trend === 1) ? "call" : "put"; }
-    else if (trend === 0 && v.iv > 55) { buy = false; side = (v.sma5 > v.sma20) ? "call" : "put"; }
+    if (v.regime !== 0 && v.iv < 75) { buy = true; side = (v.regime === 1) ? "call" : "put"; }
+    else if (v.regime === 0 && v.iv > 55) { buy = false; side = (v.sma5 > v.sma20) ? "call" : "put"; }
     else if (v.iv >= 90) { buy = true; side = (v.sma5 > v.sma20) ? "call" : "put"; }
     else return ev; // 无清晰 edge，观望
     ev.push(openOption(p, mgr, c, side, buy ? "buy" : "sell",
-      (buy ? "方向博弈" : "卖方收时间价值") + "：regime=" + trend + " IV=" + r2(v.iv) + "，" + side + "(合法标的)"));
+      (buy ? "方向博弈" : "卖方收时间价值") + "：trendScore=" + trend + " IV=" + r2(v.iv) + "，" + side + "(合法标的，defined-risk价差)"));
     return ev;
   }
 
@@ -842,7 +911,10 @@
       var pos = mgr.positions[i]; var c = coins[pos.coin]; if (!c) continue;
       if (pos.kind === "spot") u += c.price * pos.qty;                                   // 现货：本金+浮盈
       else if (pos.kind === "perp") u += pos.margin + (c.price - pos.entry) * pos.qty * (pos.side === "long" ? 1 : -1); // 合约：锁定保证金+浮盈亏
-      else u += optionState(pos, c).signed;                                            // 期权：买方=现价、卖方=负债
+      else { // 期权：买方=期权现价，卖方=冻结保证金-当前负债
+        var os = optionState(pos, c);
+        u += (pos.side === "buy") ? os.abs : (pos.margin - os.abs);
+      }
     }
     return u;
   }
