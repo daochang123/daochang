@@ -201,7 +201,7 @@ ul.rules li{margin:4px 0}
 
 <div class="live-bar">
   <div class="live-bar-head">
-    <span class="live-bar-tag"><span class="pulse"></span>实时行情 · 秒级 · 点击卡片直达 Binance 交易</span>
+    <span class="live-bar-tag"><span class="pulse"></span>实时行情 · 秒级 · 点击卡片直达 Gate.io 交易（国内可访问）</span>
     <span class="live-stamp" id="liveStamp">连接中…</span>
   </div>
   <div class="live-group">
@@ -2535,12 +2535,12 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     renderIronRules(); renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
   }
 
-  // ---------- 实时行情（Binance WebSocket，秒级 · 参考行情，不参与每小时结算） ----------
+  // ---------- 实时行情（国内可直连 · 秒级 · 多源降级 · 参考行情，不参与每小时结算） ----------
   // 主流币 TOP10（市值排名，剔除稳定币）；Meme 币为主理人严选（主流、有真实流动性与社区支撑，剔除高风险割韭菜币）
   function initLiveTicker() {
     var mainGrid = $("liveMainGrid");
     var memeGrid = $("liveMemeGrid");
-    if ((!mainGrid && !memeGrid) || !("WebSocket" in window)) return;
+    if ((!mainGrid && !memeGrid) || !("fetch" in window)) return;
 
     var MAINSTREAM = [
       { rank: 1, sym: "BTC" }, { rank: 2, sym: "ETH" }, { rank: 3, sym: "XRP" },
@@ -2548,9 +2548,18 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       { rank: 7, sym: "TRX" }, { rank: 8, sym: "AVAX" }, { rank: 9, sym: "LINK" }, { rank: 10, sym: "SUI" }
     ];
     var MEMES = ["DOGE", "SHIB", "PEPE", "WIF", "BONK", "FLOKI"];
-
     var ALL = MAINSTREAM.map(function (c) { return c.sym; }).concat(MEMES);
-    var data = {};
+
+    var data = {}; // sym -> { price, chg }
+    var sourceName = "连接中";
+    var inFlight = false;
+    var POLL_MS = 1500;
+
+    // 交易跳转目标（国内可直连优先；如需切换交易所改这里）
+    var EXCHANGE = {
+      name: "Gate.io",
+      tradeUrl: function (sym) { return "https://www.gate.io/trade/" + sym + "_USDT"; }
+    };
 
     function fmtPx(p) {
       if (p >= 1000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -2560,26 +2569,54 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       return p.toFixed(8);
     }
 
-    function tradeUrl(sym) {
-      return "https://www.binance.com/en/trade/" + sym + "_USDT?type=spot";
+    // 源 1：Binance 官方镜像域名（data-api.binance.vision，国内可直连，CORS 放开）
+    function fetchBinance() {
+      var q = ALL.map(function (s) { return '"' + s + 'USDT"'; }).join(",");
+      return fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + encodeURIComponent("[" + q + "]"), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("binance " + r.status); return r.json(); })
+        .then(function (arr) {
+          for (var i = 0; i < arr.length; i++) {
+            var it = arr[i]; var sym = it.symbol.replace("USDT", "");
+            data[sym] = { price: parseFloat(it.lastPrice), chg: parseFloat(it.priceChangePercent) };
+          }
+          sourceName = "Binance 镜像";
+        });
+    }
+    // 源 2（兜底）：Gate.io 现货 ticker（.ws 域名，国内可直连，CORS 放开）
+    function fetchGate() {
+      var q = ALL.map(function (s) { return s + "_USDT"; }).join(",");
+      return fetch("https://api.gateio.ws/api/v4/spot/tickers?currency_pair=" + encodeURIComponent(q), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("gate " + r.status); return r.json(); })
+        .then(function (arr) {
+          for (var i = 0; i < arr.length; i++) {
+            var it = arr[i]; var sym = (it.currency_pair || "").split("_")[0];
+            data[sym] = { price: parseFloat(it.last), chg: parseFloat(it.change_percentage) };
+          }
+          sourceName = "Gate.io";
+        });
+    }
+
+    function poll() {
+      if (inFlight) return;
+      inFlight = true;
+      fetchBinance().catch(fetchGate).catch(function () {}).then(function () { inFlight = false; render(); });
     }
 
     function coinCard(sym, rank) {
-      var href = tradeUrl(sym);
-      var d = data[sym + "USDT"];
+      var href = EXCHANGE.tradeUrl(sym);
+      var d = data[sym];
       if (!d) {
-        return '<a class="coin-card" href="' + href + '" target="_blank" rel="noopener" title="点击前往 Binance 交易 ' + sym + '/USDT">' +
+        return '<a class="coin-card" href="' + href + '" target="_blank" rel="noopener" title="点击前往 ' + EXCHANGE.name + ' 交易 ' + sym + '/USDT">' +
           '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + sym + '</span>' +
           '<span class="cc-chg cc-pending">—</span></div>' +
           '<div class="cc-price cc-pending">等待数据…</div></a>';
       }
-      var p = parseFloat(d.c), chg = parseFloat(d.P);
-      var cls = chg >= 0 ? "up" : "down";
-      var sign = chg >= 0 ? "+" : "";
-      return '<a class="coin-card ' + cls + '" href="' + href + '" target="_blank" rel="noopener" title="点击前往 Binance 交易 ' + sym + '/USDT">' +
-        '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + d.s.replace("USDT", "") + '</span>' +
-        '<span class="cc-chg">' + sign + chg.toFixed(2) + '%</span></div>' +
-        '<div class="cc-price">$' + fmtPx(p) + '</div></a>';
+      var cls = d.chg >= 0 ? "up" : "down";
+      var sign = d.chg >= 0 ? "+" : "";
+      return '<a class="coin-card ' + cls + '" href="' + href + '" target="_blank" rel="noopener" title="点击前往 ' + EXCHANGE.name + ' 交易 ' + sym + '/USDT">' +
+        '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + sym + '</span>' +
+        '<span class="cc-chg">' + sign + d.chg.toFixed(2) + '%</span></div>' +
+        '<div class="cc-price">$' + fmtPx(d.price) + '</div></a>';
     }
 
     function render() {
@@ -2593,19 +2630,13 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         for (var j = 0; j < MEMES.length; j++) m += coinCard(MEMES[j], "");
         memeGrid.innerHTML = m;
       }
-      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false }) + " · 参考 Binance 实时行情";
+      if ($("liveStamp")) {
+        $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false }) + " · 数据源：" + sourceName + "（国内直连）";
+      }
     }
 
-    function connect() {
-      var streams = ALL.map(function (s) { return s.toLowerCase() + "usdt@ticker"; }).join("/");
-      var ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=" + streams);
-      ws.onmessage = function (e) {
-        try { var m = JSON.parse(e.data); if (m.stream && m.data && m.data.s) { data[m.data.s] = m.data; render(); } } catch (err) {}
-      };
-      ws.onclose = function () { setTimeout(connect, 5000); };
-      ws.onerror = function () { try { ws.close(); } catch (e2) {} };
-    }
-    connect();
+    poll();
+    setInterval(poll, POLL_MS);
     render();
   }
 
