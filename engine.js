@@ -342,16 +342,37 @@
 
   function maxLevFor(profile, c) {
     if (profile.id === "aoying") {
-      // 熬鹰「低杠杆复利」蒸馏规则：大饼≤5x(实盘给3x)、主流山寨1.5x、meme 1x
+      // 熬鹰「低杠杆复利」铁律：大饼≤3x、主流山寨1.5x、meme 1x；即便黑马也永不突破（策略纪律优先）
       if (c && c.isMeme) return 1;
       if (c && c.sym === "BTC") return 3;
       return 1.5;
     }
-    return 3;
+    if (profile.id === "laomao") return 2;       // 老猫：滚仓复利，本金利润分离，保守上车
+    if (profile.id === "lanniaohui") return 3;   // 蓝鸟会：meme 合约谨慎，小仓试错
+    if (profile.id === "sniper") return 3;       // 狙击手：三重确认，中等杠杆
+    return 3;                                     // 幻狐/洪七公等默认
+  }
+
+  // 黑马信心评分(0-100)：均线完美排列 + 量能爆发 + 趋势状态 + 价格偏离 + IV适中 的多重共振
+  function blackHorseConfidence(c) {
+    var conf = 0;
+    var bull = c.sma5 > c.sma20 && c.sma20 > c.sma50;
+    var bear = c.sma5 < c.sma20 && c.sma20 < c.sma50;
+    if (bull || bear) conf += 30;                       // 均线多头/空头完美排列
+    conf += Math.min(Math.abs(c.rsi - 50) / 30, 1) * 15; // 动量（不冷不热最健康）
+    if (c.volSpike >= 1.3) conf += 20; else if (c.volSpike >= 1.0) conf += 10; // 量能爆发
+    if (typeof c.regime === "number" && c.regime !== 0) conf += 15; // 趋势状态（非震荡）
+    var dev = Math.abs(c.price - c.sma20) / c.sma20;    // 价格相对20周期均线的爆发偏离
+    conf += Math.min(dev / 0.03, 1) * 15;
+    if (c.iv <= 60) conf += 5; else if (c.iv <= 80) conf += 2; // IV 适中留爆发空间
+    return Math.min(conf, 100);
   }
 
   function openPerp(profile, mgr, c, side, rr, rationale) {
-    var cap = maxLevFor(profile, c);
+    var cap = Math.min(maxLevFor(profile, c), 5);     // 默认硬上限 5x
+    var bh = blackHorseConfidence(c);
+    var blackHorse = bh >= 80 && profile.id !== "aoying"; // 黑马且≥80%把握，非熬鹰(铁律禁高杠杆)
+    if (blackHorse) cap = 8;                            // 黑马突破：上限放宽至 8x
     var lev = cap * (0.7 + rng_global() * 0.6);
     lev = Math.max(1, Math.min(lev, cap));
     var margin = mgr.cash * (profile.sim.positionPct || 0.25);
@@ -409,7 +430,7 @@
       kind: "perp", coin: c.sym, side: side, qty: qty, margin: margin, notional: margin * lev,
       entry: c.price, leverage: lev, openTick: stateTick(), rr: rr,
       sl: slPrice, tp: tpPrice,
-      rationale: rationale + " | 止损:" + r2(slPrice) + "(" + slReason + ") 目标:" + r2(tpPrice) + "(" + tpReason + ")"
+      rationale: rationale + (blackHorse ? " | 黑马突破：杠杆上限8x(信心" + Math.round(bh) + "%≥80%)" : " | 常规杠杆≤5x(信心" + Math.round(bh) + "%)") + " | 止损:" + r2(slPrice) + "(" + slReason + ") 目标:" + r2(tpPrice) + "(" + tpReason + ")"
     };
     mgr.cash -= margin; mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
