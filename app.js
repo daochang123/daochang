@@ -184,13 +184,20 @@
         badge = '<span class="tag ' + ((isMajor && r.pnl >= 0) || isMajorDd ? "tag-red" : "tag-green") + '">' + (isMajor && r.pnl >= 0 ? "盈利大增" : (isMajor ? "亏损预警" : "重大回撤")) + '</span> ';
       }
       var pnlAbs = (r.pnl >= 0 ? "+" : "") + r2(r.pnl) + "U";
+      var mgr = state.managers[r.id];
+      var held = "空仓";
+      if (mgr && mgr.positions && mgr.positions.length) {
+        var seen = {}, syms = [];
+        for (var pi = 0; pi < mgr.positions.length; pi++) { var pc = mgr.positions[pi].coin; if (!seen[pc]) { seen[pc] = 1; syms.push(pc); } }
+        held = syms.join("·");
+      }
       html += '<section class="kpi-tile" data-id="' + r.id + '" style="--c:' + r.color + '">' +
         '<div class="kpi-top"><span class="kpi-name">' + r.name + '</span><span class="kpi-arena">' + r.arena + '</span></div>' +
         '<div class="kpi-value' + (isMajor && r.pnl < 0 ? " hl-red" : (isMajor && r.pnl >= 0 ? " hl-green" : "")) + '">' + r2(r.equity) + '<span class="kpi-unit">U</span></div>' +
         '<div class="kpi-delta ' + cls + '">' + arrow + " " + pct(r.pnlPct) + ' <span style="font-size:11px;opacity:0.8">(' + pnlAbs + ')</span></div>' +
         badge +
         '<div class="kpi-meta">交易 ' + r.trades + " · 胜率 " + pct(r.winRate) + '</div>' +
-        '<div class="kpi-meta">回撤 -' + pct(r.maxDrawdown) + " · 持仓 " + r.open + '</div>' +
+        '<div class="kpi-meta">回撤 -' + pct(r.maxDrawdown) + " · 持仓 " + r.open + "：" + held + '</div>' +
         '</section>';
     }
     el.innerHTML = html;
@@ -222,6 +229,13 @@
       var pnlClass = r.pnlPct >= 0 ? "up" : "down";
       var pnlSign = r.pnlPct >= 0 ? "+" : "";
       var pnlAbs = pnlSign + r2(r.pnl) + "U";
+      var m2 = state.managers[r.id];
+      var held2 = "空仓";
+      if (m2 && m2.positions && m2.positions.length) {
+        var seen2 = {}, syms2 = [];
+        for (var pj = 0; pj < m2.positions.length; pj++) { var pc2 = m2.positions[pj].coin; if (!seen2[pc2]) { seen2[pc2] = 1; syms2.push(pc2); } }
+        held2 = syms2.join("·");
+      }
       html += '<div class="ranking-item">' +
         '<div class="ranking-rank ' + rankClass + '">' + rankIcon + '</div>' +
         '<div class="ranking-info">' +
@@ -230,7 +244,7 @@
             '<span>交易 ' + r.trades + '</span>' +
             '<span>胜率 ' + pct(r.winRate) + '</span>' +
             '<span>回撤 -' + pct(r.maxDrawdown) + '</span>' +
-            '<span>持仓 ' + r.open + '</span>' +
+            '<span>持仓 ' + r.open + '（' + held2 + '）</span>' +
             '<span>进化 ' + r.evolution + '</span>' +
           '</div>' +
         '</div>' +
@@ -595,6 +609,44 @@
     renderIronRules(); renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
   }
 
+  // ---------- 实时行情（Binance WebSocket，秒级 · 参考行情，不参与每小时结算） ----------
+  function initLiveTicker() {
+    var track = $("liveTrack");
+    if (!track || !("WebSocket" in window)) return;
+    var SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "PEPEUSDT", "SHIBUSDT", "WIFUSDT", "BONKUSDT", "FLOKIUSDT", "MEMEUSDT"];
+    var data = {};
+    function fmtPx(p) {
+      if (p >= 1000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
+      if (p >= 1) return p.toFixed(2);
+      if (p >= 0.01) return p.toFixed(4);
+      if (p >= 0.0001) return p.toFixed(6);
+      return p.toFixed(8);
+    }
+    function render() {
+      var html = "";
+      for (var i = 0; i < SYMS.length; i++) {
+        var d = data[SYMS[i]];
+        if (!d) { html += '<span class="live-item"><span class="sym">' + SYMS[i].replace("USDT", "") + '</span><span class="px">—</span></span>'; continue; }
+        var p = parseFloat(d.c), chg = parseFloat(d.P);
+        var cls = chg >= 0 ? "up" : "down";
+        html += '<span class="live-item ' + cls + '"><span class="sym">' + d.s.replace("USDT", "") + '</span><span class="px">' + fmtPx(p) + '</span><span class="chg">' + (chg >= 0 ? "+" : "") + chg.toFixed(2) + '%</span></span>';
+      }
+      track.innerHTML = html;
+      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false });
+    }
+    function connect() {
+      var streams = SYMS.map(function (s) { return s.toLowerCase() + "@ticker"; }).join("/");
+      var ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=" + streams);
+      ws.onmessage = function (e) {
+        try { var m = JSON.parse(e.data); if (m.stream && m.data && m.data.s) { data[m.data.s] = m.data; render(); } } catch (err) {}
+      };
+      ws.onclose = function () { setTimeout(connect, 5000); };
+      ws.onerror = function () { try { ws.close(); } catch (e2) {} };
+    }
+    connect();
+    render();
+  }
+
   // 实时/云端快照模式：优先读取服务器按 12 小时推进生成的状态
   function bootWithLiveState(live) {
     state = live;
@@ -623,6 +675,7 @@
   function setupDashboardRuntime() {
     ENGINE.attachProfiles(PROFILES);
     bindEvents();
+    initLiveTicker();
     // 优先加载云端快照（服务端 data/latest.json），失败则回退确定性推演
     fetch("data/latest.json", { cache: "no-store" })
       .then(function (res) { return res.ok ? res.json() : null; })
