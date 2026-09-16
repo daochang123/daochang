@@ -56,18 +56,26 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .active-range{font-size:12px;color:var(--muted);white-space:nowrap}
 .icon-btn{border:1px solid var(--line-strong);background:var(--page);color:var(--muted);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px}
 .icon-btn:hover{color:var(--accent)}
-.live-bar{display:flex;align-items:center;gap:12px;background:var(--soft);border-bottom:1px solid var(--line);padding:6px 20px}
+.live-bar{padding:8px 20px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
+.live-bar-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .live-bar-tag{font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;display:flex;align-items:center;gap:5px}
 .live-bar-tag .pulse{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:livePulse 1.2s infinite}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
-.live-track{display:flex;gap:18px;overflow-x:auto;white-space:nowrap;flex:1;scrollbar-width:none}
-.live-track::-webkit-scrollbar{display:none}
-.live-item{display:inline-flex;align-items:baseline;gap:6px;font-size:12px;color:var(--muted)}
-.live-item .sym{font-weight:600;color:var(--ink)}
-.live-item .px{font-variant-numeric:tabular-nums;color:var(--ink)}
-.live-item.up .chg{color:#16a34a;font-weight:600}
-.live-item.down .chg{color:#dc2626;font-weight:600}
-.live-stamp{font-size:11px;color:var(--faint);white-space:nowrap}
+.live-stamp{font-size:11px;color:var(--faint);margin-left:auto;white-space:nowrap}
+.live-group{margin-bottom:8px}
+.live-group:last-child{margin-bottom:0}
+.live-group-title{font-size:11px;color:var(--faint);font-weight:600;margin:0 0 6px}
+.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.coin-card{border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:var(--page);min-width:0;transition:border-color .15s,transform .15s;text-decoration:none;color:inherit;display:block;cursor:pointer}
+.coin-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.coin-card .cc-top{display:flex;align-items:center;gap:6px;font-size:12px}
+.coin-card .cc-rank{font-size:10px;font-weight:700;color:var(--faint);min-width:15px;text-align:right}
+.coin-card .cc-sym{font-weight:700;color:var(--ink)}
+.coin-card .cc-chg{margin-left:auto;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.coin-card.up .cc-chg{color:#16a34a}
+.coin-card.down .cc-chg{color:#dc2626}
+.coin-card .cc-price{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coin-card .cc-pending{color:var(--faint);font-weight:400}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -213,9 +221,18 @@ ${CSS}
 </div>
 
 <div class="live-bar">
-  <span class="live-bar-tag"><span class="pulse"></span>实时行情</span>
-  <div class="live-track" id="liveTrack">正在连接 Binance 实时行情…</div>
-  <span class="live-stamp" id="liveStamp"></span>
+  <div class="live-bar-head">
+    <span class="live-bar-tag"><span class="pulse"></span>实时行情 · 秒级 · 点击卡片直达 Binance 交易</span>
+    <span class="live-stamp" id="liveStamp">连接中…</span>
+  </div>
+  <div class="live-group">
+    <div class="live-group-title">主流币 · TOP 10（市值排名，剔除稳定币）</div>
+    <div class="live-grid" id="liveMainGrid"></div>
+  </div>
+  <div class="live-group">
+    <div class="live-group-title">Meme币 · 主理人严选（主流靠谱 · 已剔除高风险割韭菜币）</div>
+    <div class="live-grid" id="liveMemeGrid"></div>
+  </div>
 </div>
 
 <main class="dashboard-shell">
@@ -266,10 +283,10 @@ ${CSS}
 
       <section class="dashboard-panel table-panel wide">
         <div class="panel-head">
-          <div><div class="panel-title">每日复盘</div><div class="panel-sub">每位主理人每交易日结算 · 权益 / 当日盈亏 / 胜负 + 纠错沉淀</div></div>
-          <div class="panel-menu"><button class="menu-btn" onclick="showSource('每日复盘','对 state.managers[*].dailyReview 聚合：day, equity, pnl, pnlPct, trades, wins, losses, lesson。','每个交易日(24 tick)结束由 rollDailyReview() 结算：日末权益相对日初的当日盈亏、当日平仓胜/负笔数，并按 profile.selfCorrection 轮转沉淀一条纠错教训。')" title="查看数据来源">⋮</button></div>
+          <div><div class="panel-title">每日复盘</div><div class="panel-sub">每位主理人每交易日结算 · 数据驱动复盘：权益 / 盈亏 / 胜率 / 沉淀教训 + 下一步进化动作</div></div>
+          <div class="panel-menu"><button class="menu-btn" onclick="showSource('每日复盘','对 state.managers[*].dailyReview 聚合：day, equity, pnl, pnlPct, trades, wins, losses, winRate, bestPnl, worstPnl, lesson, action。','每个交易日(24 tick)结束由 rollDailyReview() 结算：对比日末权益与日初权益得当日盈亏，统计当日平仓胜/负与胜率，并按实际表现生成数据驱动的教训(lesson)与下一步进化动作(action)，供后续沉淀到策略参数。')" title="查看数据来源">⋮</button></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>权益(U)</th><th>当日盈亏</th><th>交易</th><th>复盘沉淀</th></tr></thead><tbody id="dailyReviewBody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>权益(U)</th><th>当日盈亏</th><th>交易/胜率</th><th>复盘沉淀</th></tr></thead><tbody id="dailyReviewBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel">
