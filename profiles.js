@@ -85,7 +85,7 @@
         positionPct: 0.20,
         riskPerTradePct: 0.08,
         rrMin: 2.0,
-        holdMaxTicks: 30
+        holdMaxTicks: 22
       }
     },
     {
@@ -163,7 +163,7 @@
         positionPct: 0.25,
         riskPerTradePct: 0.025,
         rrMin: 1.5,
-        holdMaxTicks: 48
+        holdMaxTicks: 36
       }
     },
     {
@@ -242,7 +242,7 @@
         positionPct: 0.15,
         riskPerTradePct: 0.02,
         rrMin: 2.0,
-        holdMaxTicks: 96
+        holdMaxTicks: 72
       }
     },
     {
