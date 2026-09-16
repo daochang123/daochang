@@ -222,7 +222,7 @@ ${CSS}
 
 <div class="live-bar">
   <div class="live-bar-head">
-    <span class="live-bar-tag"><span class="pulse"></span>实时行情 · 秒级 · 点击卡片直达 Binance 交易</span>
+    <span class="live-bar-tag"><span class="pulse"></span>实时行情 · 秒级 · 点击卡片直达 Gate.io 交易（国内可访问）</span>
     <span class="live-stamp" id="liveStamp">连接中…</span>
   </div>
   <div class="live-group">
