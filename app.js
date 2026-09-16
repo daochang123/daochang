@@ -307,7 +307,8 @@
       var rev = m.dailyReview || [];
       for (var j = rev.length - 1; j >= 0; j--) {
         var r = rev[j];
-        rows.push({ name: p.name, color: p.color, day: r.day + 1, equity: r2(r.equity), pnl: r2(r.pnl), pnlPct: r.pnlPct, trades: r.trades, wins: r.wins, losses: r.losses, lesson: r.lesson });
+        var winRate = (typeof r.winRate === "number") ? r.winRate : (r.trades ? (r.wins / r.trades) : 0);
+        rows.push({ name: p.name, color: p.color, day: (r.day || 0) + 1, equity: r2(r.equity || 0), pnl: r2(r.pnl || 0), pnlPct: r.pnlPct || 0, trades: r.trades || 0, wins: r.wins || 0, losses: r.losses || 0, winRate: winRate, lesson: r.lesson || "", action: r.action || "" });
         if (rows.length >= 80) break;
       }
       if (rows.length >= 80) break;
@@ -320,12 +321,14 @@
       var isMajor = Math.abs(r.pnlPct) >= 0.05;
       var pnlCls = up ? (isMajor ? "hl-green-bg" : "hl-green") : "hl-red-bg";
       var equityCls = isMajor && !up ? "hl-red" : "";
+      var tradeStr = r.trades === 0 ? "空仓无交易" : (r.trades + "笔 · 胜率" + Math.round(r.winRate * 100) + "% · " + r.wins + "胜/" + r.losses + "负");
       html += '<tr><td style="color:' + r.color + '">' + r.name + '</td><td>第' + r.day + '天</td>' +
         '<td class="' + equityCls + '">' + r.equity + '</td>' +
         '<td class="' + pnlCls + '">' + (up ? '+' : '') + r.pnl + ' (' + (up ? '+' : '') + pct(r.pnlPct) + ')</td>' +
-        '<td>' + r.trades + '笔/' + r.wins + '胜/' + r.losses + '负</td><td class="rat">' + r.lesson + '</td></tr>';
+        '<td>' + tradeStr + '</td>' +
+        '<td class="rat">' + r.lesson + (r.action ? '<div style="color:var(--faint);font-size:11px;margin-top:2px">→ ' + r.action + '</div>' : '') + '</td></tr>';
     }
-    $("dailyReviewBody").innerHTML = html || '<tr><td colspan="6" class="empty">暂无每日复盘（首个完整交易日后自动生成）</td></tr>';
+    $("dailyReviewBody").innerHTML = html || '<tr><td colspan="6" class="empty">暂无每日复盘（首个完整交易日后自动生成，可在 7D/30D 预览中直接查看）</td></tr>';
   }
 
   function renderPositions() {
@@ -610,11 +613,22 @@
   }
 
   // ---------- 实时行情（Binance WebSocket，秒级 · 参考行情，不参与每小时结算） ----------
+  // 主流币 TOP10（市值排名，剔除稳定币）；Meme 币为主理人严选（主流、有真实流动性与社区支撑，剔除高风险割韭菜币）
   function initLiveTicker() {
-    var track = $("liveTrack");
-    if (!track || !("WebSocket" in window)) return;
-    var SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "PEPEUSDT", "SHIBUSDT", "WIFUSDT", "BONKUSDT", "FLOKIUSDT", "MEMEUSDT"];
+    var mainGrid = $("liveMainGrid");
+    var memeGrid = $("liveMemeGrid");
+    if ((!mainGrid && !memeGrid) || !("WebSocket" in window)) return;
+
+    var MAINSTREAM = [
+      { rank: 1, sym: "BTC" }, { rank: 2, sym: "ETH" }, { rank: 3, sym: "XRP" },
+      { rank: 4, sym: "BNB" }, { rank: 5, sym: "SOL" }, { rank: 6, sym: "ADA" },
+      { rank: 7, sym: "TRX" }, { rank: 8, sym: "AVAX" }, { rank: 9, sym: "LINK" }, { rank: 10, sym: "SUI" }
+    ];
+    var MEMES = ["DOGE", "SHIB", "PEPE", "WIF", "BONK", "FLOKI"];
+
+    var ALL = MAINSTREAM.map(function (c) { return c.sym; }).concat(MEMES);
     var data = {};
+
     function fmtPx(p) {
       if (p >= 1000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
       if (p >= 1) return p.toFixed(2);
@@ -622,20 +636,45 @@
       if (p >= 0.0001) return p.toFixed(6);
       return p.toFixed(8);
     }
-    function render() {
-      var html = "";
-      for (var i = 0; i < SYMS.length; i++) {
-        var d = data[SYMS[i]];
-        if (!d) { html += '<span class="live-item"><span class="sym">' + SYMS[i].replace("USDT", "") + '</span><span class="px">—</span></span>'; continue; }
-        var p = parseFloat(d.c), chg = parseFloat(d.P);
-        var cls = chg >= 0 ? "up" : "down";
-        html += '<span class="live-item ' + cls + '"><span class="sym">' + d.s.replace("USDT", "") + '</span><span class="px">' + fmtPx(p) + '</span><span class="chg">' + (chg >= 0 ? "+" : "") + chg.toFixed(2) + '%</span></span>';
-      }
-      track.innerHTML = html;
-      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false });
+
+    function tradeUrl(sym) {
+      return "https://www.binance.com/en/trade/" + sym + "_USDT?type=spot";
     }
+
+    function coinCard(sym, rank) {
+      var href = tradeUrl(sym);
+      var d = data[sym + "USDT"];
+      if (!d) {
+        return '<a class="coin-card" href="' + href + '" target="_blank" rel="noopener" title="点击前往 Binance 交易 ' + sym + '/USDT">' +
+          '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + sym + '</span>' +
+          '<span class="cc-chg cc-pending">—</span></div>' +
+          '<div class="cc-price cc-pending">等待数据…</div></a>';
+      }
+      var p = parseFloat(d.c), chg = parseFloat(d.P);
+      var cls = chg >= 0 ? "up" : "down";
+      var sign = chg >= 0 ? "+" : "";
+      return '<a class="coin-card ' + cls + '" href="' + href + '" target="_blank" rel="noopener" title="点击前往 Binance 交易 ' + sym + '/USDT">' +
+        '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + d.s.replace("USDT", "") + '</span>' +
+        '<span class="cc-chg">' + sign + chg.toFixed(2) + '%</span></div>' +
+        '<div class="cc-price">$' + fmtPx(p) + '</div></a>';
+    }
+
+    function render() {
+      if (mainGrid) {
+        var h = "";
+        for (var i = 0; i < MAINSTREAM.length; i++) h += coinCard(MAINSTREAM[i].sym, MAINSTREAM[i].rank);
+        mainGrid.innerHTML = h;
+      }
+      if (memeGrid) {
+        var m = "";
+        for (var j = 0; j < MEMES.length; j++) m += coinCard(MEMES[j], "");
+        memeGrid.innerHTML = m;
+      }
+      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false }) + " · 参考 Binance 实时行情";
+    }
+
     function connect() {
-      var streams = SYMS.map(function (s) { return s.toLowerCase() + "@ticker"; }).join("/");
+      var streams = ALL.map(function (s) { return s.toLowerCase() + "usdt@ticker"; }).join("/");
       var ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=" + streams);
       ws.onmessage = function (e) {
         try { var m = JSON.parse(e.data); if (m.stream && m.data && m.data.s) { data[m.data.s] = m.data; render(); } } catch (err) {}
