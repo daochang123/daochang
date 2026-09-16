@@ -841,26 +841,59 @@
     return ev;
   }
 
-  // ---------- 每日复盘 ----------
+  // ---------- 每日复盘（数据驱动 · 沉淀 + 进化） ----------
   function rollDailyReview(mgr, profile, st) {
     var day = Math.floor((st.tick - 1) / TICK_PER_DAY); // 刚结束的交易日序号
     var dayStart = (typeof mgr._dayStartEquity === "number") ? mgr._dayStartEquity : mgr.startEquity;
     var dayEnd = mgr.equity;
     var pnl = dayEnd - dayStart;
-    var trades = 0, wins = 0, losses = 0;
+    var pnlPct = pnl / Math.max(Math.abs(dayStart), 1e-9);
+
+    var trades = 0, wins = 0, losses = 0, best = null, worst = null;
     for (var i = 0; i < mgr.closed.length; i++) {
       var c = mgr.closed[i];
       if (Math.floor(c.tick / TICK_PER_DAY) === day) {
         trades++;
         if (c.pnl > 0) wins++; else losses++;
+        if (!best || c.pnl > best.pnl) best = c;
+        if (!worst || c.pnl < worst.pnl) worst = c;
       }
     }
-    var sc = profile.selfCorrection && profile.selfCorrection.length ? profile.selfCorrection : ["持续复盘，修正交易认知"];
-    var lesson = sc[mgr.dailyReview.length % sc.length];
+    var winRate = trades ? wins / trades : 0;
+    var pct2 = function (x) { return (x * 100).toFixed(2) + "%"; };
+
+    // 数据驱动复盘：把当日真实表现翻译成可追溯教训 + 下一步动作（纯函数，确定性可复现，不依赖随机数）
+    var lesson, action;
+    if (trades === 0) {
+      lesson = "当日空仓观望：未出现符合「" + ((profile.coreSystem && profile.coreSystem.name) || "体系") + "」的入场信号，宁错过不硬做，守住纪律。";
+      action = "维持节奏，继续按纪律扫描候选机会，不因空仓而焦虑下单";
+    } else if (pnl < 0 && losses > wins) {
+      lesson = "当日亏损 " + r2(pnl) + "U（" + pct2(pnlPct) + "），" + losses + "负" + wins + "胜、整体出手质量或止损纪律偏弱。";
+      action = "逐笔复盘亏损单的开仓依据与止损位，收紧出手门槛，降频观察";
+    } else if (pnl < 0 && wins >= losses) {
+      lesson = "当日" + wins + "胜" + losses + "负却仍亏损 " + r2(pnl) + "U：胜率及格但盈亏比失衡（赚小亏大），盈利单没拿住、亏损单没及时止。";
+      action = "优化止盈兑现与止损执行，优先提高单笔盈亏比而非追求胜率";
+    } else if (pnl > 0 && winRate >= 0.5) {
+      lesson = "当日盈利 " + r2(pnl) + "U（" + pct2(pnlPct) + "），" + wins + "胜" + losses + "负，体系与仓位纪律匹配良好。";
+      action = "延续当前交易节奏与仓位，继续严守铁律";
+    } else if (pnl > 0 && winRate < 0.5) {
+      lesson = "当日盈利 " + r2(pnl) + "U 但胜率仅" + (winRate * 100).toFixed(0) + "%：靠少数大盈利覆盖多数小亏损，属盈亏比驱动。";
+      action = "控制无脑试错频率，留意亏损单是否偏多，保持胜率与盈亏比平衡";
+    } else {
+      lesson = "当日盈亏 " + r2(pnl) + "U（" + pct2(pnlPct) + "），" + trades + "笔：" + wins + "胜" + losses + "负。";
+      action = "按主理人体系复盘，把关键结论沉淀到策略参数";
+    }
+
+    // 单笔最大亏损点名（沉淀反例库）
+    if (worst && worst.pnl < 0 && Math.abs(worst.pnl) >= Math.max(Math.abs(dayStart) * 0.015, 1)) {
+      lesson += " 最大单笔亏损 " + r2(worst.pnl) + "U（" + worst.coin + "），复盘入场依据与止损位。";
+    }
+
     mgr.dailyReview.push({
-      day: day, equity: r2(dayEnd), pnl: r2(pnl),
-      pnlPct: r2(pnl / Math.max(Math.abs(dayStart), 1e-9)),
-      trades: trades, wins: wins, losses: losses, lesson: lesson
+      day: day, equity: r2(dayEnd), pnl: r2(pnl), pnlPct: r2(pnlPct),
+      trades: trades, wins: wins, losses: losses, winRate: r2(winRate),
+      bestPnl: best ? r2(best.pnl) : 0, worstPnl: worst ? r2(worst.pnl) : 0,
+      lesson: lesson, action: action
     });
     if (mgr.dailyReview.length > 120) mgr.dailyReview.shift();
     mgr._dayStartEquity = dayEnd;
@@ -945,7 +978,10 @@
       var last = mgr.closed[mgr.closed.length - 1];
       mgr.evoSeenIdx = mgr.closed.length;
       if (last.pnl < 0 && mgr.evolution.length < 60) {
-        var lesson = profile.selfCorrection[mgr.evolution.length % profile.selfCorrection.length];
+        // 优先沉淀来自每日复盘的数据驱动教训，缺省则回退体系 selfCorrection
+        var latestReview = (mgr.dailyReview && mgr.dailyReview.length) ? mgr.dailyReview[mgr.dailyReview.length - 1] : null;
+        var lesson = (latestReview && latestReview.lesson) ? latestReview.lesson :
+          profile.selfCorrection[mgr.evolution.length % profile.selfCorrection.length];
         mgr.evolution.push({ tick: tick, trigger: "亏损复盘#" + last.coin, lesson: lesson, delta: "参数微调" });
       }
     }
