@@ -46,18 +46,26 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .active-range{font-size:12px;color:var(--muted);white-space:nowrap}
 .icon-btn{border:1px solid var(--line-strong);background:var(--page);color:var(--muted);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px}
 .icon-btn:hover{color:var(--accent)}
-.live-bar{display:flex;align-items:center;gap:12px;background:var(--soft);border-bottom:1px solid var(--line);padding:6px 20px}
+.live-bar{padding:8px 20px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
+.live-bar-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .live-bar-tag{font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;display:flex;align-items:center;gap:5px}
 .live-bar-tag .pulse{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:livePulse 1.2s infinite}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
-.live-track{display:flex;gap:18px;overflow-x:auto;white-space:nowrap;flex:1;scrollbar-width:none}
-.live-track::-webkit-scrollbar{display:none}
-.live-item{display:inline-flex;align-items:baseline;gap:6px;font-size:12px;color:var(--muted)}
-.live-item .sym{font-weight:600;color:var(--ink)}
-.live-item .px{font-variant-numeric:tabular-nums;color:var(--ink)}
-.live-item.up .chg{color:#16a34a;font-weight:600}
-.live-item.down .chg{color:#dc2626;font-weight:600}
-.live-stamp{font-size:11px;color:var(--faint);white-space:nowrap}
+.live-stamp{font-size:11px;color:var(--faint);margin-left:auto;white-space:nowrap}
+.live-group{margin-bottom:8px}
+.live-group:last-child{margin-bottom:0}
+.live-group-title{font-size:11px;color:var(--faint);font-weight:600;margin:0 0 6px}
+.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.coin-card{border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:var(--page);min-width:0;transition:border-color .15s,transform .15s;text-decoration:none;color:inherit;display:block;cursor:pointer}
+.coin-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.coin-card .cc-top{display:flex;align-items:center;gap:6px;font-size:12px}
+.coin-card .cc-rank{font-size:10px;font-weight:700;color:var(--faint);min-width:15px;text-align:right}
+.coin-card .cc-sym{font-weight:700;color:var(--ink)}
+.coin-card .cc-chg{margin-left:auto;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.coin-card.up .cc-chg{color:#16a34a}
+.coin-card.down .cc-chg{color:#dc2626}
+.coin-card .cc-price{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coin-card .cc-pending{color:var(--faint);font-weight:400}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -192,9 +200,18 @@ ul.rules li{margin:4px 0}
 </div>
 
 <div class="live-bar">
-  <span class="live-bar-tag"><span class="pulse"></span>实时行情</span>
-  <div class="live-track" id="liveTrack">正在连接 Binance 实时行情…</div>
-  <span class="live-stamp" id="liveStamp"></span>
+  <div class="live-bar-head">
+    <span class="live-bar-tag"><span class="pulse"></span>实时行情 · 秒级 · 点击卡片直达 Binance 交易</span>
+    <span class="live-stamp" id="liveStamp">连接中…</span>
+  </div>
+  <div class="live-group">
+    <div class="live-group-title">主流币 · TOP 10（市值排名，剔除稳定币）</div>
+    <div class="live-grid" id="liveMainGrid"></div>
+  </div>
+  <div class="live-group">
+    <div class="live-group-title">Meme币 · 主理人严选（主流靠谱 · 已剔除高风险割韭菜币）</div>
+    <div class="live-grid" id="liveMemeGrid"></div>
+  </div>
 </div>
 
 <main class="dashboard-shell">
@@ -245,10 +262,10 @@ ul.rules li{margin:4px 0}
 
       <section class="dashboard-panel table-panel wide">
         <div class="panel-head">
-          <div><div class="panel-title">每日复盘</div><div class="panel-sub">每位主理人每交易日结算 · 权益 / 当日盈亏 / 胜负 + 纠错沉淀</div></div>
-          <div class="panel-menu"><button class="menu-btn" onclick="showSource('每日复盘','对 state.managers[*].dailyReview 聚合：day, equity, pnl, pnlPct, trades, wins, losses, lesson。','每个交易日(24 tick)结束由 rollDailyReview() 结算：日末权益相对日初的当日盈亏、当日平仓胜/负笔数，并按 profile.selfCorrection 轮转沉淀一条纠错教训。')" title="查看数据来源">⋮</button></div>
+          <div><div class="panel-title">每日复盘</div><div class="panel-sub">每位主理人每交易日结算 · 数据驱动复盘：权益 / 盈亏 / 胜率 / 沉淀教训 + 下一步进化动作</div></div>
+          <div class="panel-menu"><button class="menu-btn" onclick="showSource('每日复盘','对 state.managers[*].dailyReview 聚合：day, equity, pnl, pnlPct, trades, wins, losses, winRate, bestPnl, worstPnl, lesson, action。','每个交易日(24 tick)结束由 rollDailyReview() 结算：对比日末权益与日初权益得当日盈亏，统计当日平仓胜/负与胜率，并按实际表现生成数据驱动的教训(lesson)与下一步进化动作(action)，供后续沉淀到策略参数。')" title="查看数据来源">⋮</button></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>权益(U)</th><th>当日盈亏</th><th>交易</th><th>复盘沉淀</th></tr></thead><tbody id="dailyReviewBody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>权益(U)</th><th>当日盈亏</th><th>交易/胜率</th><th>复盘沉淀</th></tr></thead><tbody id="dailyReviewBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel">
@@ -1677,26 +1694,59 @@ ul.rules li{margin:4px 0}
     return ev;
   }
 
-  // ---------- 每日复盘 ----------
+  // ---------- 每日复盘（数据驱动 · 沉淀 + 进化） ----------
   function rollDailyReview(mgr, profile, st) {
     var day = Math.floor((st.tick - 1) / TICK_PER_DAY); // 刚结束的交易日序号
     var dayStart = (typeof mgr._dayStartEquity === "number") ? mgr._dayStartEquity : mgr.startEquity;
     var dayEnd = mgr.equity;
     var pnl = dayEnd - dayStart;
-    var trades = 0, wins = 0, losses = 0;
+    var pnlPct = pnl / Math.max(Math.abs(dayStart), 1e-9);
+
+    var trades = 0, wins = 0, losses = 0, best = null, worst = null;
     for (var i = 0; i < mgr.closed.length; i++) {
       var c = mgr.closed[i];
       if (Math.floor(c.tick / TICK_PER_DAY) === day) {
         trades++;
         if (c.pnl > 0) wins++; else losses++;
+        if (!best || c.pnl > best.pnl) best = c;
+        if (!worst || c.pnl < worst.pnl) worst = c;
       }
     }
-    var sc = profile.selfCorrection && profile.selfCorrection.length ? profile.selfCorrection : ["持续复盘，修正交易认知"];
-    var lesson = sc[mgr.dailyReview.length % sc.length];
+    var winRate = trades ? wins / trades : 0;
+    var pct2 = function (x) { return (x * 100).toFixed(2) + "%"; };
+
+    // 数据驱动复盘：把当日真实表现翻译成可追溯教训 + 下一步动作（纯函数，确定性可复现，不依赖随机数）
+    var lesson, action;
+    if (trades === 0) {
+      lesson = "当日空仓观望：未出现符合「" + ((profile.coreSystem && profile.coreSystem.name) || "体系") + "」的入场信号，宁错过不硬做，守住纪律。";
+      action = "维持节奏，继续按纪律扫描候选机会，不因空仓而焦虑下单";
+    } else if (pnl < 0 && losses > wins) {
+      lesson = "当日亏损 " + r2(pnl) + "U（" + pct2(pnlPct) + "），" + losses + "负" + wins + "胜、整体出手质量或止损纪律偏弱。";
+      action = "逐笔复盘亏损单的开仓依据与止损位，收紧出手门槛，降频观察";
+    } else if (pnl < 0 && wins >= losses) {
+      lesson = "当日" + wins + "胜" + losses + "负却仍亏损 " + r2(pnl) + "U：胜率及格但盈亏比失衡（赚小亏大），盈利单没拿住、亏损单没及时止。";
+      action = "优化止盈兑现与止损执行，优先提高单笔盈亏比而非追求胜率";
+    } else if (pnl > 0 && winRate >= 0.5) {
+      lesson = "当日盈利 " + r2(pnl) + "U（" + pct2(pnlPct) + "），" + wins + "胜" + losses + "负，体系与仓位纪律匹配良好。";
+      action = "延续当前交易节奏与仓位，继续严守铁律";
+    } else if (pnl > 0 && winRate < 0.5) {
+      lesson = "当日盈利 " + r2(pnl) + "U 但胜率仅" + (winRate * 100).toFixed(0) + "%：靠少数大盈利覆盖多数小亏损，属盈亏比驱动。";
+      action = "控制无脑试错频率，留意亏损单是否偏多，保持胜率与盈亏比平衡";
+    } else {
+      lesson = "当日盈亏 " + r2(pnl) + "U（" + pct2(pnlPct) + "），" + trades + "笔：" + wins + "胜" + losses + "负。";
+      action = "按主理人体系复盘，把关键结论沉淀到策略参数";
+    }
+
+    // 单笔最大亏损点名（沉淀反例库）
+    if (worst && worst.pnl < 0 && Math.abs(worst.pnl) >= Math.max(Math.abs(dayStart) * 0.015, 1)) {
+      lesson += " 最大单笔亏损 " + r2(worst.pnl) + "U（" + worst.coin + "），复盘入场依据与止损位。";
+    }
+
     mgr.dailyReview.push({
-      day: day, equity: r2(dayEnd), pnl: r2(pnl),
-      pnlPct: r2(pnl / Math.max(Math.abs(dayStart), 1e-9)),
-      trades: trades, wins: wins, losses: losses, lesson: lesson
+      day: day, equity: r2(dayEnd), pnl: r2(pnl), pnlPct: r2(pnlPct),
+      trades: trades, wins: wins, losses: losses, winRate: r2(winRate),
+      bestPnl: best ? r2(best.pnl) : 0, worstPnl: worst ? r2(worst.pnl) : 0,
+      lesson: lesson, action: action
     });
     if (mgr.dailyReview.length > 120) mgr.dailyReview.shift();
     mgr._dayStartEquity = dayEnd;
@@ -1781,7 +1831,10 @@ ul.rules li{margin:4px 0}
       var last = mgr.closed[mgr.closed.length - 1];
       mgr.evoSeenIdx = mgr.closed.length;
       if (last.pnl < 0 && mgr.evolution.length < 60) {
-        var lesson = profile.selfCorrection[mgr.evolution.length % profile.selfCorrection.length];
+        // 优先沉淀来自每日复盘的数据驱动教训，缺省则回退体系 selfCorrection
+        var latestReview = (mgr.dailyReview && mgr.dailyReview.length) ? mgr.dailyReview[mgr.dailyReview.length - 1] : null;
+        var lesson = (latestReview && latestReview.lesson) ? latestReview.lesson :
+          profile.selfCorrection[mgr.evolution.length % profile.selfCorrection.length];
         mgr.evolution.push({ tick: tick, trigger: "亏损复盘#" + last.coin, lesson: lesson, delta: "参数微调" });
       }
     }
@@ -2177,7 +2230,8 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       var rev = m.dailyReview || [];
       for (var j = rev.length - 1; j >= 0; j--) {
         var r = rev[j];
-        rows.push({ name: p.name, color: p.color, day: r.day + 1, equity: r2(r.equity), pnl: r2(r.pnl), pnlPct: r.pnlPct, trades: r.trades, wins: r.wins, losses: r.losses, lesson: r.lesson });
+        var winRate = (typeof r.winRate === "number") ? r.winRate : (r.trades ? (r.wins / r.trades) : 0);
+        rows.push({ name: p.name, color: p.color, day: (r.day || 0) + 1, equity: r2(r.equity || 0), pnl: r2(r.pnl || 0), pnlPct: r.pnlPct || 0, trades: r.trades || 0, wins: r.wins || 0, losses: r.losses || 0, winRate: winRate, lesson: r.lesson || "", action: r.action || "" });
         if (rows.length >= 80) break;
       }
       if (rows.length >= 80) break;
@@ -2190,12 +2244,14 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       var isMajor = Math.abs(r.pnlPct) >= 0.05;
       var pnlCls = up ? (isMajor ? "hl-green-bg" : "hl-green") : "hl-red-bg";
       var equityCls = isMajor && !up ? "hl-red" : "";
+      var tradeStr = r.trades === 0 ? "空仓无交易" : (r.trades + "笔 · 胜率" + Math.round(r.winRate * 100) + "% · " + r.wins + "胜/" + r.losses + "负");
       html += '<tr><td style="color:' + r.color + '">' + r.name + '</td><td>第' + r.day + '天</td>' +
         '<td class="' + equityCls + '">' + r.equity + '</td>' +
         '<td class="' + pnlCls + '">' + (up ? '+' : '') + r.pnl + ' (' + (up ? '+' : '') + pct(r.pnlPct) + ')</td>' +
-        '<td>' + r.trades + '笔/' + r.wins + '胜/' + r.losses + '负</td><td class="rat">' + r.lesson + '</td></tr>';
+        '<td>' + tradeStr + '</td>' +
+        '<td class="rat">' + r.lesson + (r.action ? '<div style="color:var(--faint);font-size:11px;margin-top:2px">→ ' + r.action + '</div>' : '') + '</td></tr>';
     }
-    $("dailyReviewBody").innerHTML = html || '<tr><td colspan="6" class="empty">暂无每日复盘（首个完整交易日后自动生成）</td></tr>';
+    $("dailyReviewBody").innerHTML = html || '<tr><td colspan="6" class="empty">暂无每日复盘（首个完整交易日后自动生成，可在 7D/30D 预览中直接查看）</td></tr>';
   }
 
   function renderPositions() {
@@ -2480,11 +2536,22 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   }
 
   // ---------- 实时行情（Binance WebSocket，秒级 · 参考行情，不参与每小时结算） ----------
+  // 主流币 TOP10（市值排名，剔除稳定币）；Meme 币为主理人严选（主流、有真实流动性与社区支撑，剔除高风险割韭菜币）
   function initLiveTicker() {
-    var track = $("liveTrack");
-    if (!track || !("WebSocket" in window)) return;
-    var SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "PEPEUSDT", "SHIBUSDT", "WIFUSDT", "BONKUSDT", "FLOKIUSDT", "MEMEUSDT"];
+    var mainGrid = $("liveMainGrid");
+    var memeGrid = $("liveMemeGrid");
+    if ((!mainGrid && !memeGrid) || !("WebSocket" in window)) return;
+
+    var MAINSTREAM = [
+      { rank: 1, sym: "BTC" }, { rank: 2, sym: "ETH" }, { rank: 3, sym: "XRP" },
+      { rank: 4, sym: "BNB" }, { rank: 5, sym: "SOL" }, { rank: 6, sym: "ADA" },
+      { rank: 7, sym: "TRX" }, { rank: 8, sym: "AVAX" }, { rank: 9, sym: "LINK" }, { rank: 10, sym: "SUI" }
+    ];
+    var MEMES = ["DOGE", "SHIB", "PEPE", "WIF", "BONK", "FLOKI"];
+
+    var ALL = MAINSTREAM.map(function (c) { return c.sym; }).concat(MEMES);
     var data = {};
+
     function fmtPx(p) {
       if (p >= 1000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
       if (p >= 1) return p.toFixed(2);
@@ -2492,20 +2559,45 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       if (p >= 0.0001) return p.toFixed(6);
       return p.toFixed(8);
     }
-    function render() {
-      var html = "";
-      for (var i = 0; i < SYMS.length; i++) {
-        var d = data[SYMS[i]];
-        if (!d) { html += '<span class="live-item"><span class="sym">' + SYMS[i].replace("USDT", "") + '</span><span class="px">—</span></span>'; continue; }
-        var p = parseFloat(d.c), chg = parseFloat(d.P);
-        var cls = chg >= 0 ? "up" : "down";
-        html += '<span class="live-item ' + cls + '"><span class="sym">' + d.s.replace("USDT", "") + '</span><span class="px">' + fmtPx(p) + '</span><span class="chg">' + (chg >= 0 ? "+" : "") + chg.toFixed(2) + '%</span></span>';
-      }
-      track.innerHTML = html;
-      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false });
+
+    function tradeUrl(sym) {
+      return "https://www.binance.com/en/trade/" + sym + "_USDT?type=spot";
     }
+
+    function coinCard(sym, rank) {
+      var href = tradeUrl(sym);
+      var d = data[sym + "USDT"];
+      if (!d) {
+        return '<a class="coin-card" href="' + href + '" target="_blank" rel="noopener" title="点击前往 Binance 交易 ' + sym + '/USDT">' +
+          '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + sym + '</span>' +
+          '<span class="cc-chg cc-pending">—</span></div>' +
+          '<div class="cc-price cc-pending">等待数据…</div></a>';
+      }
+      var p = parseFloat(d.c), chg = parseFloat(d.P);
+      var cls = chg >= 0 ? "up" : "down";
+      var sign = chg >= 0 ? "+" : "";
+      return '<a class="coin-card ' + cls + '" href="' + href + '" target="_blank" rel="noopener" title="点击前往 Binance 交易 ' + sym + '/USDT">' +
+        '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + d.s.replace("USDT", "") + '</span>' +
+        '<span class="cc-chg">' + sign + chg.toFixed(2) + '%</span></div>' +
+        '<div class="cc-price">$' + fmtPx(p) + '</div></a>';
+    }
+
+    function render() {
+      if (mainGrid) {
+        var h = "";
+        for (var i = 0; i < MAINSTREAM.length; i++) h += coinCard(MAINSTREAM[i].sym, MAINSTREAM[i].rank);
+        mainGrid.innerHTML = h;
+      }
+      if (memeGrid) {
+        var m = "";
+        for (var j = 0; j < MEMES.length; j++) m += coinCard(MEMES[j], "");
+        memeGrid.innerHTML = m;
+      }
+      if ($("liveStamp")) $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false }) + " · 参考 Binance 实时行情";
+    }
+
     function connect() {
-      var streams = SYMS.map(function (s) { return s.toLowerCase() + "@ticker"; }).join("/");
+      var streams = ALL.map(function (s) { return s.toLowerCase() + "usdt@ticker"; }).join("/");
       var ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=" + streams);
       ws.onmessage = function (e) {
         try { var m = JSON.parse(e.data); if (m.stream && m.data && m.data.s) { data[m.data.s] = m.data; render(); } } catch (err) {}
