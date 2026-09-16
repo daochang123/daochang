@@ -56,6 +56,18 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .active-range{font-size:12px;color:var(--muted);white-space:nowrap}
 .icon-btn{border:1px solid var(--line-strong);background:var(--page);color:var(--muted);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px}
 .icon-btn:hover{color:var(--accent)}
+.live-bar{display:flex;align-items:center;gap:12px;background:var(--soft);border-bottom:1px solid var(--line);padding:6px 20px}
+.live-bar-tag{font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.live-bar-tag .pulse{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:livePulse 1.2s infinite}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-track{display:flex;gap:18px;overflow-x:auto;white-space:nowrap;flex:1;scrollbar-width:none}
+.live-track::-webkit-scrollbar{display:none}
+.live-item{display:inline-flex;align-items:baseline;gap:6px;font-size:12px;color:var(--muted)}
+.live-item .sym{font-weight:600;color:var(--ink)}
+.live-item .px{font-variant-numeric:tabular-nums;color:var(--ink)}
+.live-item.up .chg{color:#16a34a;font-weight:600}
+.live-item.down .chg{color:#dc2626;font-weight:600}
+.live-stamp{font-size:11px;color:var(--faint);white-space:nowrap}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -198,6 +210,12 @@ ${CSS}
     <button class="icon-btn" id="refreshBtn" title="刷新数据（拉取最新快照）">↻</button>
     <button class="icon-btn" id="themeBtn" title="切换主题">◐</button>
   </div>
+</div>
+
+<div class="live-bar">
+  <span class="live-bar-tag"><span class="pulse"></span>实时行情</span>
+  <div class="live-track" id="liveTrack">正在连接 Binance 实时行情…</div>
+  <span class="live-stamp" id="liveStamp"></span>
 </div>
 
 <main class="dashboard-shell">
