@@ -607,7 +607,7 @@
 
   function decideSniper(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.dayTrades >= 8) return ev; // 日内扫描窗口上限
+    if (mgr.dayTrades >= 12) return ev; // 日内扫描上限（短中线为主，适度放宽）
     if (mgr.dayLosses >= 3) return ev; // 连亏3笔停手
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
@@ -643,17 +643,18 @@
 
   function decideLaomao(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.monthTrades >= 12) return ev; // 月度出手上限（保命纪律）
+    if (mgr.monthTrades >= 18) return ev; // 月度出手上限（短中线为主，适度放宽）
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var c = coins[pos.coin]; if (!c) continue;
       var pnl = profit(pos, c);
-      // 滚仓复利：浮盈≥20% 即正向金字塔加仓（本金利润分离，只滚多）
+      // 滚仓复利：浮盈≥20% 即正向金字塔加仓
       if (pnl > 0.20 && pos.leverage < 1.6 && rng() < 0.25) {
         ev.push(addPyramid(p, mgr, c, pos, "盈利" + r2(pnl * 100) + "%，滚仓复利，正向金字塔加仓(1:0.6:0.3)"));
         return ev;
       }
       // 三线破位：跌破中期趋势线（近50周期）止损
-      if (c.price < c.sma50) { ev.push(closePosition(mgr, pos, c, "跌破50周期趋势线，三线定乾坤纪律止损")); continue; }
+      if (pos.side === "long" && c.price < c.sma50) { ev.push(closePosition(mgr, pos, c, "跌破50周期趋势线，三线定乾坤纪律止损")); continue; }
+      if (pos.side === "short" && c.price > c.sma50) { ev.push(closePosition(mgr, pos, c, "突破50周期趋势线，空头止损")); continue; }
       // 高位缩量 = 出货信号，落袋为主
       if (pnl > 0.4 && c.volSpike < 0.8) { ev.push(closePosition(mgr, pos, c, "高位缩量，出货信号，落袋为主")); continue; }
     }
@@ -661,14 +662,24 @@
     for (var i = 0; i < p.sim.coinsA.length; i++) {
       var cc = coins[p.sim.coinsA[i]]; if (!cc) continue;
       var v = viewCoin(cc);
-      // 三线定乾坤：长期转多(价>96周期) + 中期金叉(20周期上穿50周期) + 量能确认，金叉放量黄金买点
+      // 三线定乾坤（多）：长期转多 + 中期金叉 + 量能确认
       if (cc.price > cc.sma96 && cc.sma20 > cc.sma50 && v.volSpike > 1.0 && v.rsi > 50 && v.rsi < 72) {
         ev.push(openPerp(p, mgr, cc, "long", 2.2, "三线定乾坤：站上96周期+20周期金叉50周期+量能放大，金叉放量黄金买点"));
         return ev;
       }
-      // 多周期回踩：4H方向仍多 + 价格回踩50周期趋势线附近 + 未破位
+      // 多周期回踩（多）：4H方向仍多 + 价格回踩50周期趋势线附近
       else if (cc.price > cc.sma96 && cc.price > cc.sma50 * 0.985 && cc.price < cc.sma50 * 1.02 && v.rsi > 45 && v.rsi < 60) {
         ev.push(openPerp(p, mgr, cc, "long", 2.6, "多周期回踩：回踩50周期趋势线支撑未破，4H方向仍多，回踩确认买点"));
+        return ev;
+      }
+      // 三线定乾坤（空）：长期转空 + 中期死叉 + 量能确认
+      else if (cc.price < cc.sma96 && cc.sma20 < cc.sma50 && v.volSpike > 1.0 && v.rsi < 50 && v.rsi > 28) {
+        ev.push(openPerp(p, mgr, cc, "short", 2.2, "三线定乾坤（空）：跌破96周期+20周期死叉50周期+量能放大，死叉放量做空"));
+        return ev;
+      }
+      // 反弹做空（空）：4H方向仍空 + 价格反弹至50周期压力位附近
+      else if (cc.price < cc.sma96 && cc.price < cc.sma50 * 1.015 && cc.price > cc.sma50 * 0.98 && v.rsi > 40 && v.rsi < 55) {
+        ev.push(openPerp(p, mgr, cc, "short", 2.6, "反弹做空（空）：反弹50周期压力未破，4H方向仍空，确认卖点"));
         return ev;
       }
     }
