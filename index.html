@@ -2693,6 +2693,9 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     var snapshotTime = null;
     var inFlight = false;
     var POLL_MS = 1500;
+    // 仅 http/https 页面才发起浏览器直连交易所：file:// 或预览沙箱的 opaque 协议下，
+    // 跨域直连会被浏览器 net::ERR_ABORTED 拦截并刷屏，此时改用同源沙箱快照，绝不直连。
+    var USE_DIRECT = /^https?:$/.test(window.location.protocol);
 
     // 交易跳转目标（国内可直连优先；如需切换交易所改这里）
     var EXCHANGE = {
@@ -2736,9 +2739,11 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     }
 
     function poll() {
-      if (inFlight) return;
+      if (!USE_DIRECT || inFlight) return;
       inFlight = true;
-      fetchBinance().catch(fetchGate).catch(function () {}).then(function () { inFlight = false; render(); });
+      fetchBinance().catch(fetchGate)
+        .then(function () { inFlight = false; render(); })
+        .catch(function () { inFlight = false; });
     }
 
     function coinCard(sym, rank) {
@@ -2795,30 +2800,41 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       } catch (e) { return ""; }
     }
 
-    // 兜底：读取同源沙箱快照（Node 端定时抓取，浏览器直连海外源失败时仍能显示真实行情）
-    fetch("data/live_prices.json", { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; })
-      .then(function (sp) {
-        if (sp && sp.prices) {
-          var filled = false;
-          for (var i = 0; i < ALL.length; i++) {
-            var s = ALL[i], it = sp.prices[s];
-            if (it && typeof it.price === "number" && it.price > 0) {
-              data[s] = { price: it.price, chg: (typeof it.chg === "number" ? it.chg : 0) };
-              filled = true;
+    // 兜底：读取同源沙箱快照（Node 端定时抓取，浏览器直连海外源失败/被禁时仍能显示真实行情）
+    function loadSnapshot(done) {
+      fetch("data/live_prices.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (sp) {
+          if (sp && sp.prices) {
+            var filled = false;
+            for (var i = 0; i < ALL.length; i++) {
+              var s = ALL[i], it = sp.prices[s];
+              if (it && typeof it.price === "number" && it.price > 0) {
+                data[s] = { price: it.price, chg: (typeof it.chg === "number" ? it.chg : 0) };
+                filled = true;
+              }
+            }
+            if (filled) {
+              snapshotTime = sp.generated_at || null;
+              sourceName = "沙箱快照";
+              render();
             }
           }
-          if (filled) {
-            snapshotTime = sp.generated_at || null;
-            sourceName = "沙箱快照";
-            render();
-          }
-        }
-      });
+          if (done) done();
+        });
+    }
 
+    // 秒级刷新：固定 1.5s 一个节拍，保证数据始终同步真实交易所行情。
+    //  - http/https 页面：直连交易所多源拉真实价（Binance → Gate），秒级同步；
+    //  - 预览/文件协议页面：浏览器无法跨域直连（会 net::ERR_ABORTED 刷屏），
+    //    改读同源沙箱快照 data/live_prices.json（同为服务端抓取的真实价，绝不回退合成数据）。
+    setInterval(function () {
+      if (USE_DIRECT) poll(); else loadSnapshot();
+    }, POLL_MS);
+
+    loadSnapshot();
     poll();
-    setInterval(poll, POLL_MS);
     render();
   }
 
