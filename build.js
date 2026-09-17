@@ -124,6 +124,9 @@ td.rat{max-width:300px;white-space:normal;color:var(--muted)}
 .tag-red{background:rgba(224,58,58,.14);color:#e03a3a}
 .tag-green{background:rgba(15,169,104,.14);color:#0fa968}
 .empty{color:var(--faint);text-align:center;padding:18px}
+.collapse-row td{text-align:center;padding:8px;border-bottom:0}
+.collapse-btn{border:1px solid var(--line-strong);background:var(--page);color:var(--accent);border-radius:16px;padding:4px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.collapse-btn:hover{background:var(--soft-blue)}
 .type-select{font-size:12px;padding:4px 6px;border:1px solid var(--line-strong);border-radius:6px;background:var(--page);color:var(--ink);display:none}
 ul.rules{margin:6px 0;padding-left:20px}
 ul.rules li{margin:4px 0}
@@ -281,35 +284,38 @@ ${CSS}
 
       <section class="dashboard-panel table-panel wide">
         <div class="panel-head">
-          <div><div class="panel-title">操作决策日志</div><div class="panel-sub">按主理人切换聚焦操作路径 · 全部视图最近 120 条（含铁律拦截）· 单主理人按时间正序</div></div>
-          <div class="panel-menu"><button class="menu-btn" onclick="showSource('操作决策日志','对 state.managers[*].decisions 聚合：tick→天, type, coin, side, detail, rationale。','每开/平仓与铁律拦截都会写入该主理人的 decisions 数组；可切换单个主理人聚焦其完整操作路径。')" title="查看数据来源">⋮</button></div>
+          <div><div class="panel-title">操作决策日志</div><div class="panel-sub">新到旧排序 · 超 10 条折叠可展开 · 全部视图最近 120 条（含铁律拦截）· 显示开仓价 / 平仓价</div></div>
+          <div class="panel-menu"><button class="menu-btn" onclick="showSource('操作决策日志','对 state.managers[*].decisions 聚合：tick→天, type, coin, side, detail, price, entry, rationale。','每开/平仓与铁律拦截都会写入该主理人的 decisions 数组；可切换单个主理人聚焦其完整操作路径。')" title="查看数据来源">⋮</button></div>
         </div>
         <div class="filter-chips" id="decisionFilter"></div>
-        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>时间</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>时间</th><th>动作</th><th>标的</th><th>方向</th><th>开仓价</th><th>平仓价</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel wide">
         <div class="panel-head">
-          <div><div class="panel-title">每日复盘</div><div class="panel-sub">每位主理人每交易日结算 · 数据驱动复盘：权益 / 盈亏 / 胜率 / 沉淀教训 + 下一步进化动作</div></div>
+          <div><div class="panel-title">每日复盘</div><div class="panel-sub">每位主理人每交易日结算 · 新到旧排序 · 超 10 条折叠可展开 · 数据驱动复盘：权益 / 盈亏 / 胜率 / 沉淀教训 + 下一步进化动作</div></div>
           <div class="panel-menu"><button class="menu-btn" onclick="showSource('每日复盘','对 state.managers[*].dailyReview 聚合：day, equity, pnl, pnlPct, trades, wins, losses, winRate, bestPnl, worstPnl, lesson, action。','每个交易日(24 tick)结束由 rollDailyReview() 结算：对比日末权益与日初权益得当日盈亏，统计当日平仓胜/负与胜率，并按实际表现生成数据驱动的教训(lesson)与下一步进化动作(action)，供后续沉淀到策略参数。')" title="查看数据来源">⋮</button></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>权益(U)</th><th>当日盈亏</th><th>交易/胜率</th><th>复盘沉淀</th></tr></thead><tbody id="dailyReviewBody"></tbody></table></div>
+        <div class="filter-chips" id="dailyFilter"></div>
+        <div class="table-wrap"><table><thead><tr><th id="dailyThMgr">主理人</th><th>天</th><th>权益(U)</th><th>当日盈亏</th><th>交易/胜率</th><th>复盘沉淀</th></tr></thead><tbody id="dailyReviewBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel">
         <div class="panel-head">
-          <div><div class="panel-title">自我纠错沉淀</div><div class="panel-sub">亏损复盘 / 周期复盘</div></div>
+          <div><div class="panel-title">自我纠错沉淀</div><div class="panel-sub">亏损复盘 / 周期复盘 · 新到旧排序 · 超 10 条折叠可展开</div></div>
           <div class="panel-menu"><button class="menu-btn" onclick="showSource('自我纠错沉淀','对 state.managers[*].evolution 聚合：trigger, lesson, delta。','亏损平仓与周期性复盘触发 evolve()，把体系 selfCorrection 沉淀为进化条目。')" title="查看数据来源">⋮</button></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>触发</th><th>沉淀教训</th></tr></thead><tbody id="evolutionBody"></tbody></table></div>
+        <div class="filter-chips" id="evolutionFilter"></div>
+        <div class="table-wrap"><table><thead><tr><th id="evolutionThMgr">主理人</th><th>时间</th><th>触发</th><th>沉淀教训</th></tr></thead><tbody id="evolutionBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel">
         <div class="panel-head">
-          <div><div class="panel-title">当前持仓</div><div class="panel-sub">现货 / 合约 / 价差期权</div></div>
+          <div><div class="panel-title">当前持仓</div><div class="panel-sub">现货 / 合约 / 价差期权 · 新到旧排序 · 超 10 条折叠可展开</div></div>
           <div class="panel-menu"><button class="menu-btn" onclick="showSource('当前持仓','对 state.managers[*].positions 聚合。','持仓为未平仓位；期权为 defined-risk 价差（铁律：不裸卖）。')" title="查看数据来源">⋮</button></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>标的</th><th>类型</th><th>方向</th><th>数量</th></tr></thead><tbody id="positionBody"></tbody></table></div>
+        <div class="filter-chips" id="positionFilter"></div>
+        <div class="table-wrap"><table><thead><tr><th id="positionThMgr">主理人</th><th>标的</th><th>类型</th><th>方向</th><th>数量</th><th>开仓价</th></tr></thead><tbody id="positionBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel note-panel">
