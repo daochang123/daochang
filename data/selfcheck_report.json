@@ -1,0 +1,46 @@
+{
+  "checks": {
+    "data_freshness": {
+      "pass": true,
+      "age_hours": 0,
+      "tick": 1,
+      "generated_at": "2026-09-17T16:39:27.009Z"
+    },
+    "real_price_mode": {
+      "pass": true,
+      "price_source": "binance-vision"
+    },
+    "price_sync": {
+      "pass": true,
+      "checked": 11
+    },
+    "decision_price_consistency": {
+      "pass": true,
+      "checked": 3
+    },
+    "meme_price_sanity": {
+      "pass": true,
+      "meme_coins": 7
+    }
+  },
+  "failures": [],
+  "status": "pass",
+  "generated_at": "2026-09-17T16:39:32.359Z",
+  "price_snapshot": null,
+  "live_vs_snapshot": {
+    "source": "binance-vision",
+    "drift_pct": {
+      "BTC": 0.024,
+      "ETH": 0.026,
+      "SOL": 0.02,
+      "BNB": 0.018,
+      "DOGE": 0.012,
+      "PEPE": 0,
+      "SHIB": 0,
+      "WIF": 0,
+      "BONK": 0,
+      "FLOKI": 0,
+      "MEME": 0
+    }
+  }
+}
