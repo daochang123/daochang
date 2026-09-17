@@ -24,6 +24,13 @@
   function r2(x) { return Math.round(x * 100) / 100; }
   function pct(x) { return (x * 100).toFixed(1) + "%"; }
   function day(t) { return (t / TICK_PER_DAY).toFixed(1); }
+  function timeOf(tick) { return LAUNCH_TS + tick * TICK_MS; }
+  function fmtDT(ts) {
+    // 统一按东八区(Asia/Shanghai)格式化，避免跟随用户设备时区偏移
+    var d = new Date(ts + 8 * 3600000);
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getUTCFullYear() + "/" + (d.getUTCMonth() + 1) + "/" + d.getUTCDate() + " " + pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds());
+  }
 
   // ---------- 仿真 ----------
   function bootState() {
@@ -286,7 +293,7 @@
       if (mgr) {
         for (var j = 0; j < mgr.decisions.length; j++) { // 正序 = 操作路径
           var d = mgr.decisions[j];
-          rows.push({ name: prof ? prof.name : decisionsFilter, color: prof ? prof.color : "#888", day: day(d.tick), type: d.type, coin: d.coin || "", side: d.side || "", detail: d.detail || "", rationale: d.rationale || "" });
+          rows.push({ name: prof ? prof.name : decisionsFilter, color: prof ? prof.color : "#888", tick: d.tick, time: fmtDT(timeOf(d.tick)), type: d.type, coin: d.coin || "", side: d.side || "", detail: d.detail || "", rationale: d.rationale || "" });
         }
       }
     } else {
@@ -294,12 +301,12 @@
         var p2 = PROFILES.KOLS[i2]; var m2 = state.managers[p2.id];
         for (var j2 = m2.decisions.length - 1; j2 >= 0; j2--) {
           var d2 = m2.decisions[j2];
-          rows.push({ name: p2.name, color: p2.color, day: day(d2.tick), type: d2.type, coin: d2.coin || "", side: d2.side || "", detail: d2.detail || "", rationale: d2.rationale || "" });
+          rows.push({ name: p2.name, color: p2.color, tick: d2.tick, time: fmtDT(timeOf(d2.tick)), type: d2.type, coin: d2.coin || "", side: d2.side || "", detail: d2.detail || "", rationale: d2.rationale || "" });
           if (rows.length >= 120) break;
         }
         if (rows.length >= 120) break;
       }
-      rows.sort(function (a, b) { return parseFloat(b.day) - parseFloat(a.day); });
+      rows.sort(function (a, b) { return b.tick - a.tick; });
     }
 
     var html = "";
@@ -310,7 +317,7 @@
       var typeCls = isBlock ? ' class="hl-red-bg"' : (r.type === "1_3_watch" ? ' class="hl-yellow"' : "");
       var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : (r.type === "1_3_watch" ? '<span class="tag" style="background:#fff3cd;color:#856404">观望</span> ' : "");
       var nameCell = single ? "" : '<td style="color:' + r.color + '">' + r.name + '</td>';
-      html += '<tr>' + nameCell + '<td>' + r.day + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
+      html += '<tr>' + nameCell + '<td class="nowrap">' + r.time + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
         '</td><td>' + r.side + '</td><td>' + r.detail + '</td><td class="rat">' + r.rationale + '</td></tr>';
     }
     $("decisionBody").innerHTML = html || '<tr><td colspan="' + (single ? 6 : 7) + '" class="empty">当前窗口无决策记录</td></tr>';
