@@ -25,8 +25,11 @@ const SYNC_FILES = [
   "app.js",
   "build.js",
   "snapshot.js",
+  "marketdata.js",
+  "selfcheck.js",
   "dashboard_data.json",
   "data/live_prices.json",
+  "data/selfcheck_report.json",
   "sync_to_github.js",
 ];
 
