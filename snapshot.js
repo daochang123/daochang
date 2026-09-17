@@ -23,6 +23,14 @@ const DATA_DIR = path.join(DIR, "data");
 const STATE_FILE = path.join(DATA_DIR, "state.json");
 const LATEST_FILE = path.join(DATA_DIR, "latest.json");
 const SUMMARY_FILE = path.join(DATA_DIR, "latest_summary.json");
+const LIVE_PRICES_FILE = path.join(DATA_DIR, "live_prices.json");
+
+// 展示用实时行情（10 主流 + 6 meme），抓 price + 24h 涨跌幅，供前端兜底
+const LIVE_COINS = [
+  "BTCUSDT","ETHUSDT","XRPUSDT","BNBUSDT","SOLUSDT","ADAUSDT",
+  "TRXUSDT","AVAXUSDT","LINKUSDT","SUIUSDT",
+  "DOGEUSDT","SHIBUSDT","PEPEUSDT","WIFUSDT","BONKUSDT","FLOKIUSDT"
+];
 
 const TICKS = parseInt(process.argv[2] || "1", 10);
 
@@ -49,6 +57,31 @@ function fetchRealPrices() {
     return prices;
   } catch (e) {
     console.error("[snapshot] 获取真实价格失败，回退合成行情: " + e.message);
+    return null;
+  }
+}
+
+// ---------- 展示用实时行情快照（16 币，price + 24h 涨跌幅） ----------
+function fetchTickerPrices() {
+  try {
+    const q = LIVE_COINS.map(s => '"' + s + '"').join(",");
+    const url = "https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + encodeURIComponent("[" + q + "]");
+    const out = execSync(`curl -sS -m 10 "${url}"`, {
+      encoding: "utf-8", timeout: 20000, stdio: ["pipe", "pipe", "pipe"]
+    }).trim();
+    const arr = JSON.parse(out);
+    if (!Array.isArray(arr) || !arr.length) throw new Error("ticker 解析失败");
+    const map = {};
+    for (const it of arr) {
+      map[it.symbol.replace("USDT", "")] = {
+        price: parseFloat(it.lastPrice) || 0,
+        chg: parseFloat(it.priceChangePercent) || 0
+      };
+    }
+    if (!map.BTC) throw new Error("缺少 BTC");
+    return map;
+  } catch (e) {
+    console.error("[snapshot] 行情快照抓取失败: " + e.message);
     return null;
   }
 }
@@ -158,6 +191,14 @@ function main() {
   };
   fs.writeFileSync(LATEST_FILE, JSON.stringify(st));
   fs.writeFileSync(SUMMARY_FILE, JSON.stringify(payload, null, 2));
+
+  // 展示用实时行情快照（供前端在浏览器直连海外源失败时兜底）
+  const tickerPx = fetchTickerPrices();
+  fs.writeFileSync(LIVE_PRICES_FILE, JSON.stringify({
+    generated_at: new Date().toISOString(),
+    source: tickerPx ? "binance-vision" : "unavailable",
+    prices: tickerPx || {}
+  }));
 
   // ---------- 推送报告（stdout） ----------
   const lines = [];
