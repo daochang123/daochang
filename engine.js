@@ -27,20 +27,28 @@
   }
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
   function r2(x) { return Math.round(x * 100) / 100; }
+  // 价格精度格式化：按量级保留小数，避免极小 meme 币（如 PEPE 0.0000036）被 r2 抹成 0
+  function roundPx(p) {
+    if (p == null || !isFinite(p)) return p;
+    var a = Math.abs(p);
+    var dec = a >= 1000 ? 2 : (a >= 1 ? 2 : (a >= 0.01 ? 4 : (a >= 0.0001 ? 6 : 8)));
+    return Number(p.toFixed(dec));
+  }
 
   // ---------- 市场模型 ----------
+  // base = 真实行情锚点（合成行情的均值回归中心 + 冷启动基价），已按 Binance 实时价校准（2026-09）
   var COIN_DEF = {
-    "BTC": { base: 77284, vol: 0.010, drift: 0.00025, isMeme: false },
-    "ETH": { base: 2520, vol: 0.014, drift: 0.00018, isMeme: false },
-    "SOL": { base: 102, vol: 0.020, drift: 0.00020, isMeme: false },
-    "BNB": { base: 610, vol: 0.016, drift: 0.00015, isMeme: false },
-    "DOGE": { base: 0.18, vol: 0.024, drift: 0.00008, isMeme: true },
-    "PEPE": { base: 0.000012, vol: 0.032, drift: 0.00004, isMeme: true },
-    "SHIB": { base: 0.000025, vol: 0.035, drift: 0.00004, isMeme: true },
-    "WIF": { base: 2.5, vol: 0.050, drift: 0.00005, isMeme: true },
-    "BONK": { base: 0.000028, vol: 0.040, drift: 0.00004, isMeme: true },
-    "FLOKI": { base: 0.00018, vol: 0.038, drift: 0.00004, isMeme: true },
-    "MEME": { base: 0.015, vol: 0.042, drift: 0.00004, isMeme: true }
+    "BTC": { base: 76700, vol: 0.010, drift: 0.00025, isMeme: false },
+    "ETH": { base: 2470, vol: 0.014, drift: 0.00018, isMeme: false },
+    "SOL": { base: 101, vol: 0.020, drift: 0.00020, isMeme: false },
+    "BNB": { base: 727, vol: 0.016, drift: 0.00015, isMeme: false },
+    "DOGE": { base: 0.082, vol: 0.024, drift: 0.00008, isMeme: true },
+    "PEPE": { base: 0.0000036, vol: 0.032, drift: 0.00004, isMeme: true },
+    "SHIB": { base: 0.0000052, vol: 0.035, drift: 0.00004, isMeme: true },
+    "WIF": { base: 0.187, vol: 0.050, drift: 0.00005, isMeme: true },
+    "BONK": { base: 0.0000027, vol: 0.040, drift: 0.00004, isMeme: true },
+    "FLOKI": { base: 0.0000244, vol: 0.038, drift: 0.00004, isMeme: true },
+    "MEME": { base: 0.000524, vol: 0.042, drift: 0.00004, isMeme: true }
   };
   var REAL_COINS = ["BTC", "ETH", "SOL", "BNB", "DOGE", "PEPE", "SHIB", "WIF", "BONK", "FLOKI", "MEME"]; // 所有主理涉及的币种均锚定真实行情
 
@@ -77,15 +85,17 @@
         else c.regime = 0;
         c.drift = clamp(ret * 0.3 + c.drift * 0.5, -0.008, 0.008);
       } else {
-        // ===== 合成行情（原逻辑） =====
+        // ===== 合成行情（原逻辑 + 均值回归防护） =====
         var shock = (rng() < 0.008) ? (rng() < 0.5 ? -1 : 1) * (0.03 + rng() * 0.05) : 0;
         c.drift = c.drift * 0.985 + (rng() < 0.04 ? (rng() < 0.5 ? -1 : 1) * 0.0006 : 0);
         if (rng() < 0.01) { if (c.regime === 1) c.regime = -1; else c.regime = (rng() < 0.5 ? 1 : -1); c.regime = c.regime || 0; }
         else if (rng() < 0.006) c.regime = 0;
         var trendDrift = (c.regime || 0) * 0.0005;
         var sigma = c.vol * (0.6 + rng() * 0.9);
-        ret = c.drift + trendDrift + sigma * gauss(rng) + shock;
-        c.price = Math.max(c.base * 0.05, c.price * Math.exp(ret));
+        // 均值回归：向真实基价牵引，杜绝随机游走长期漂移（曾导致 BTC 合成价跑到 9 万+）
+        var pull = 0.03 * Math.log(c.base / c.price);
+        ret = (c.drift + trendDrift) * 0.5 + pull + sigma * gauss(rng) + shock;
+        c.price = Math.max(c.base * 0.2, c.price * Math.exp(ret));
       }
       // ===== 公共指标更新（真实 & 合成共用，时间尺度=1 tick=1小时） =====
       c.hist.push(c.price);
@@ -332,7 +342,7 @@
       kind: "spot", coin: c.sym, side: side, qty: qty, margin: cost, notional: cost,
       entry: c.price, leverage: 1, openTick: stateTick(), rr: rr,
       sl: slPrice, tp: tpPrice,
-      rationale: rationale + " | 止损:" + r2(slPrice) + "(" + slReason + ") 目标:" + r2(tpPrice) + "(" + tpReason + ")"
+      rationale: rationale + " | 止损:" + roundPx(slPrice) + "(" + slReason + ") 目标:" + roundPx(tpPrice) + "(" + tpReason + ")"
     };
     mgr.cash -= cost; mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
@@ -430,7 +440,7 @@
       kind: "perp", coin: c.sym, side: side, qty: qty, margin: margin, notional: margin * lev,
       entry: c.price, leverage: lev, openTick: stateTick(), rr: rr,
       sl: slPrice, tp: tpPrice,
-      rationale: rationale + (blackHorse ? " | 黑马突破：杠杆上限8x(信心" + Math.round(bh) + "%≥80%)" : " | 常规杠杆≤5x(信心" + Math.round(bh) + "%)") + " | 止损:" + r2(slPrice) + "(" + slReason + ") 目标:" + r2(tpPrice) + "(" + tpReason + ")"
+      rationale: rationale + (blackHorse ? " | 黑马突破：杠杆上限8x(信心" + Math.round(bh) + "%≥80%)" : " | 常规杠杆≤5x(信心" + Math.round(bh) + "%)") + " | 止损:" + roundPx(slPrice) + "(" + slReason + ") 目标:" + roundPx(tpPrice) + "(" + tpReason + ")"
     };
     mgr.cash -= margin; mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
@@ -444,7 +454,7 @@
     if (mgr.cash < add) return { type: "skip", rationale: "现金不足，跳过金字塔加仓" };
     pos.margin += add; pos.notional += add * pos.leverage; pos.qty += qtyAdd;
     mgr.cash -= add;
-    logDecision(mgr, { tick: stateTick(), type: "add", coin: pos.coin, side: pos.side, detail: r2(add), rationale: rationale });
+    logDecision(mgr, { tick: stateTick(), type: "add", coin: pos.coin, side: pos.side, detail: r2(add), price: c.price, rationale: rationale });
     return { type: "add", coin: pos.coin, detail: r2(add), rationale: rationale };
   }
 
@@ -485,7 +495,7 @@
     }
     mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
-    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "option", side: side + (buySell === "buy" ? "/买" : "/卖"), detail: "K=" + r2(k1) + "/" + r2(k2) + " IV=" + r2(c.iv) + " 投入=" + r2(cost) + "U", price: S, rationale: rationale });
+    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "option", side: side + (buySell === "buy" ? "/买" : "/卖"), detail: "K=" + roundPx(k1) + "/" + roundPx(k2) + " IV=" + r2(c.iv) + " 投入=" + r2(cost) + "U", price: S, rationale: rationale });
     return { type: "open", coin: c.sym, kind: "option", side: side, detail: r2(cost), rationale: rationale };
   }
 
@@ -922,10 +932,10 @@
       stepMarket(st.market, rng, realPrices);
       st.priceHistory.push({ 
         t: st.tick, 
-        BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price), 
-        BNB: r2(st.market.BNB.price), DOGE: r2(st.market.DOGE.price),
-        PEPE: r2(st.market.PEPE.price), SHIB: r2(st.market.SHIB.price), WIF: r2(st.market.WIF.price),
-        BONK: r2(st.market.BONK.price), FLOKI: r2(st.market.FLOKI.price), MEME: r2(st.market.MEME.price)
+        BTC: roundPx(st.market.BTC.price), ETH: roundPx(st.market.ETH.price), SOL: roundPx(st.market.SOL.price), 
+        BNB: roundPx(st.market.BNB.price), DOGE: roundPx(st.market.DOGE.price),
+        PEPE: roundPx(st.market.PEPE.price), SHIB: roundPx(st.market.SHIB.price), WIF: roundPx(st.market.WIF.price),
+        BONK: roundPx(st.market.BONK.price), FLOKI: roundPx(st.market.FLOKI.price), MEME: roundPx(st.market.MEME.price)
       });
       if (st.priceHistory.length > 6000) st.priceHistory.shift();
       for (var id in st.managers) {
@@ -1017,6 +1027,6 @@
     COIN_DEF: COIN_DEF, initMarket: initMarket, stepMarket: stepMarket, bsPrice: bsPrice,
     initState: initState, initManager: initManager, advance: advance, summary: summary,
     attachProfiles: attachProfiles, mulberry32: mulberry32, TICK_PER_DAY: TICK_PER_DAY,
-    r2: r2, viewCoin: viewCoin
+    r2: r2, roundPx: roundPx, viewCoin: viewCoin
   };
 });
