@@ -71,6 +71,7 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .filter-chips .chip:hover{border-color:var(--accent);color:var(--ink)}
 .filter-chips .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .chip-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.nowrap{white-space:nowrap}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -263,7 +264,7 @@ ul.rules li{margin:4px 0}
           <div class="panel-menu"><button class="menu-btn" onclick="showSource('操作决策日志','对 state.managers[*].decisions 聚合：tick→天, type, coin, side, detail, rationale。','每开/平仓与铁律拦截都会写入该主理人的 decisions 数组；可切换单个主理人聚焦其完整操作路径。')" title="查看数据来源">⋮</button></div>
         </div>
         <div class="filter-chips" id="decisionFilter"></div>
-        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>天</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>时间</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel wide">
@@ -1953,6 +1954,13 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
   function r2(x) { return Math.round(x * 100) / 100; }
   function pct(x) { return (x * 100).toFixed(1) + "%"; }
   function day(t) { return (t / TICK_PER_DAY).toFixed(1); }
+  function timeOf(tick) { return LAUNCH_TS + tick * TICK_MS; }
+  function fmtDT(ts) {
+    // 统一按东八区(Asia/Shanghai)格式化，避免跟随用户设备时区偏移
+    var d = new Date(ts + 8 * 3600000);
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getUTCFullYear() + "/" + (d.getUTCMonth() + 1) + "/" + d.getUTCDate() + " " + pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + ":" + pad(d.getUTCSeconds());
+  }
 
   // ---------- 仿真 ----------
   function bootState() {
@@ -2215,7 +2223,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       if (mgr) {
         for (var j = 0; j < mgr.decisions.length; j++) { // 正序 = 操作路径
           var d = mgr.decisions[j];
-          rows.push({ name: prof ? prof.name : decisionsFilter, color: prof ? prof.color : "#888", day: day(d.tick), type: d.type, coin: d.coin || "", side: d.side || "", detail: d.detail || "", rationale: d.rationale || "" });
+          rows.push({ name: prof ? prof.name : decisionsFilter, color: prof ? prof.color : "#888", tick: d.tick, time: fmtDT(timeOf(d.tick)), type: d.type, coin: d.coin || "", side: d.side || "", detail: d.detail || "", rationale: d.rationale || "" });
         }
       }
     } else {
@@ -2223,12 +2231,12 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         var p2 = PROFILES.KOLS[i2]; var m2 = state.managers[p2.id];
         for (var j2 = m2.decisions.length - 1; j2 >= 0; j2--) {
           var d2 = m2.decisions[j2];
-          rows.push({ name: p2.name, color: p2.color, day: day(d2.tick), type: d2.type, coin: d2.coin || "", side: d2.side || "", detail: d2.detail || "", rationale: d2.rationale || "" });
+          rows.push({ name: p2.name, color: p2.color, tick: d2.tick, time: fmtDT(timeOf(d2.tick)), type: d2.type, coin: d2.coin || "", side: d2.side || "", detail: d2.detail || "", rationale: d2.rationale || "" });
           if (rows.length >= 120) break;
         }
         if (rows.length >= 120) break;
       }
-      rows.sort(function (a, b) { return parseFloat(b.day) - parseFloat(a.day); });
+      rows.sort(function (a, b) { return b.tick - a.tick; });
     }
 
     var html = "";
@@ -2239,7 +2247,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       var typeCls = isBlock ? ' class="hl-red-bg"' : (r.type === "1_3_watch" ? ' class="hl-yellow"' : "");
       var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : (r.type === "1_3_watch" ? '<span class="tag" style="background:#fff3cd;color:#856404">观望</span> ' : "");
       var nameCell = single ? "" : '<td style="color:' + r.color + '">' + r.name + '</td>';
-      html += '<tr>' + nameCell + '<td>' + r.day + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
+      html += '<tr>' + nameCell + '<td class="nowrap">' + r.time + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
         '</td><td>' + r.side + '</td><td>' + r.detail + '</td><td class="rat">' + r.rationale + '</td></tr>';
     }
     $("decisionBody").innerHTML = html || '<tr><td colspan="' + (single ? 6 : 7) + '" class="empty">当前窗口无决策记录</td></tr>';
