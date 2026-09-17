@@ -357,15 +357,16 @@
         for (var j = mgr.decisions.length - 1; j >= 0; j--) items.push(makeDecisionRow(prof, mgr.decisions[j]));
       }
     } else {
+      // 先收集全部决策，再按时间降序排列，最后截取最近 120 条
+      // 修复：旧逻辑按主理人顺序收集 120 条就截断，导致某位主理人决策多时其他主理人的近期决策被漏掉
       for (var i2 = 0; i2 < PROFILES.KOLS.length; i2++) {
         var p2 = PROFILES.KOLS[i2]; var m2 = state.managers[p2.id];
         for (var j2 = m2.decisions.length - 1; j2 >= 0; j2--) {
           items.push(makeDecisionRow(p2, m2.decisions[j2]));
-          if (items.length >= 120) break;
         }
-        if (items.length >= 120) break;
       }
       items.sort(function (a, b) { return b.tick - a.tick; });
+      if (items.length > 120) items.length = 120;
     }
     setTable("decisionBody", items.map(function (r) { return r.html; }), single ? 8 : 9, single ? "该主理人暂无决策记录" : "当前窗口无决策记录");
   }
