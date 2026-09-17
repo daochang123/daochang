@@ -76,6 +76,11 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .coin-card.down .cc-chg{color:#dc2626}
 .coin-card .cc-price{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .coin-card .cc-pending{color:var(--faint);font-weight:400}
+.filter-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 10px;margin-top:-2px}
+.filter-chips .chip{border:1px solid var(--line);background:var(--page);color:var(--muted);font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;font-family:inherit}
+.filter-chips .chip:hover{border-color:var(--accent);color:var(--ink)}
+.filter-chips .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -275,10 +280,11 @@ ${CSS}
 
       <section class="dashboard-panel table-panel wide">
         <div class="panel-head">
-          <div><div class="panel-title">操作决策日志</div><div class="panel-sub">全部主理人 · 最近 120 条 · 含铁律拦截</div></div>
-          <div class="panel-menu"><button class="menu-btn" onclick="showSource('操作决策日志','对 state.managers[*].decisions 聚合：tick→天, type, coin, side, detail, rationale。','每开/平仓与铁律拦截都会写入该主理人的 decisions 数组，本表只读展示，不暴露渲染内部实现。')" title="查看数据来源">⋮</button></div>
+          <div><div class="panel-title">操作决策日志</div><div class="panel-sub">按主理人切换聚焦操作路径 · 全部视图最近 120 条（含铁律拦截）· 单主理人按时间正序</div></div>
+          <div class="panel-menu"><button class="menu-btn" onclick="showSource('操作决策日志','对 state.managers[*].decisions 聚合：tick→天, type, coin, side, detail, rationale。','每开/平仓与铁律拦截都会写入该主理人的 decisions 数组；可切换单个主理人聚焦其完整操作路径。')" title="查看数据来源">⋮</button></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>主理人</th><th>天</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
+        <div class="filter-chips" id="decisionFilter"></div>
+        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>天</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel wide">
