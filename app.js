@@ -256,18 +256,52 @@
   }
 
   // ---------- 表格 ----------
+  // 操作决策日志：默认全部主理人（倒序，含铁律拦截）；可切换单个主理人聚焦其操作路径（时间正序）
+  var decisionsFilter = ""; // "" = 全部，否则为主理人 id
+
+  function setDecisionsFilter(id) {
+    decisionsFilter = id || "";
+    renderDecisions();
+  }
+
   function renderDecisions() {
+    var fc = $("decisionFilter");
+    if (fc) {
+      var fhtml = '<button class="chip' + (decisionsFilter === "" ? " active" : "") + '" onclick="setDecisionsFilter(\'\')">全部</button>';
+      for (var i = 0; i < PROFILES.KOLS.length; i++) {
+        var p = PROFILES.KOLS[i];
+        fhtml += '<button class="chip' + (decisionsFilter === p.id ? " active" : "") + '" onclick="setDecisionsFilter(\'' + p.id + '\')"><i class="chip-dot" style="background:' + p.color + '"></i>' + p.name + '</button>';
+      }
+      fc.innerHTML = fhtml;
+    }
+    var single = decisionsFilter !== "";
+    var thMgr = $("decisionThMgr");
+    if (thMgr) thMgr.style.display = single ? "none" : "";
+
     var rows = [];
-    for (var i = 0; i < PROFILES.KOLS.length; i++) {
-      var p = PROFILES.KOLS[i]; var m = state.managers[p.id];
-      for (var j = m.decisions.length - 1; j >= 0; j--) {
-        var d = m.decisions[j];
-        rows.push({ name: p.name, color: p.color, day: day(d.tick), type: d.type, coin: d.coin || "", side: d.side || "", detail: d.detail || "", rationale: d.rationale || "" });
+    if (single) {
+      var mgr = state.managers[decisionsFilter];
+      var prof = null;
+      for (var s = 0; s < PROFILES.KOLS.length; s++) if (PROFILES.KOLS[s].id === decisionsFilter) { prof = PROFILES.KOLS[s]; break; }
+      if (mgr) {
+        for (var j = 0; j < mgr.decisions.length; j++) { // 正序 = 操作路径
+          var d = mgr.decisions[j];
+          rows.push({ name: prof ? prof.name : decisionsFilter, color: prof ? prof.color : "#888", day: day(d.tick), type: d.type, coin: d.coin || "", side: d.side || "", detail: d.detail || "", rationale: d.rationale || "" });
+        }
+      }
+    } else {
+      for (var i2 = 0; i2 < PROFILES.KOLS.length; i2++) {
+        var p2 = PROFILES.KOLS[i2]; var m2 = state.managers[p2.id];
+        for (var j2 = m2.decisions.length - 1; j2 >= 0; j2--) {
+          var d2 = m2.decisions[j2];
+          rows.push({ name: p2.name, color: p2.color, day: day(d2.tick), type: d2.type, coin: d2.coin || "", side: d2.side || "", detail: d2.detail || "", rationale: d2.rationale || "" });
+          if (rows.length >= 120) break;
+        }
         if (rows.length >= 120) break;
       }
-      if (rows.length >= 120) break;
+      rows.sort(function (a, b) { return parseFloat(b.day) - parseFloat(a.day); });
     }
-    rows.sort(function (a, b) { return parseFloat(b.day) - parseFloat(a.day); });
+
     var html = "";
     for (var k = 0; k < rows.length; k++) {
       var r = rows[k];
@@ -275,10 +309,11 @@
       var typeLabel = r.type === "open" ? "开仓" : (r.type === "close" ? "平仓" : (r.type === "1_3_watch" ? "1+3观望" : (isBlock ? "铁律拦截" : r.type)));
       var typeCls = isBlock ? ' class="hl-red-bg"' : (r.type === "1_3_watch" ? ' class="hl-yellow"' : "");
       var typeTag = isBlock ? '<span class="tag tag-red">重要</span> ' : (r.type === "1_3_watch" ? '<span class="tag" style="background:#fff3cd;color:#856404">观望</span> ' : "");
-      html += '<tr><td style="color:' + r.color + '">' + r.name + '</td><td>' + r.day + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
+      var nameCell = single ? "" : '<td style="color:' + r.color + '">' + r.name + '</td>';
+      html += '<tr>' + nameCell + '<td>' + r.day + '</td><td' + typeCls + '>' + typeTag + typeLabel + '</td><td>' + r.coin +
         '</td><td>' + r.side + '</td><td>' + r.detail + '</td><td class="rat">' + r.rationale + '</td></tr>';
     }
-    $("decisionBody").innerHTML = html || '<tr><td colspan="7" class="empty">当前窗口无决策记录</td></tr>';
+    $("decisionBody").innerHTML = html || '<tr><td colspan="' + (single ? 6 : 7) + '" class="empty">当前窗口无决策记录</td></tr>';
   }
 
   function renderEvolution() {
@@ -804,4 +839,5 @@
   window.chartFactories = chartFactories;
   window.openManager = openManager;
   window.showSource = showSource;
+  window.setDecisionsFilter = setDecisionsFilter;
 })();
