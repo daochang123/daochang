@@ -629,6 +629,7 @@
 
     var data = {}; // sym -> { price, chg }
     var sourceName = "连接中";
+    var snapshotTime = null;
     var inFlight = false;
     var POLL_MS = 1500;
 
@@ -708,9 +709,52 @@
         memeGrid.innerHTML = m;
       }
       if ($("liveStamp")) {
-        $("liveStamp").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false }) + " · 数据源：" + sourceName + "（国内直连）";
+        var t = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+        var label = "更新于 " + t;
+        if (sourceName === "沙箱快照") {
+          label += " · 数据源：沙箱快照" + (snapshotTime ? "（" + agoText(snapshotTime) + "前）" : "");
+        } else if (sourceName === "连接中") {
+          label += " · 正在连接行情源…";
+        } else {
+          label += " · 数据源：" + sourceName + "（秒级）";
+        }
+        $("liveStamp").textContent = label;
       }
     }
+
+    function agoText(iso) {
+      try {
+        var ms = Date.now() - new Date(iso).getTime();
+        var m = Math.round(ms / 60000);
+        if (m < 1) return "刚刚";
+        if (m < 60) return m + " 分钟";
+        var h = Math.round(m / 60);
+        if (h < 24) return h + " 小时";
+        return Math.round(h / 24) + " 天";
+      } catch (e) { return ""; }
+    }
+
+    // 兜底：读取同源沙箱快照（Node 端定时抓取，浏览器直连海外源失败时仍能显示真实行情）
+    fetch("data/live_prices.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (sp) {
+        if (sp && sp.prices) {
+          var filled = false;
+          for (var i = 0; i < ALL.length; i++) {
+            var s = ALL[i], it = sp.prices[s];
+            if (it && typeof it.price === "number" && it.price > 0) {
+              data[s] = { price: it.price, chg: (typeof it.chg === "number" ? it.chg : 0) };
+              filled = true;
+            }
+          }
+          if (filled) {
+            snapshotTime = sp.generated_at || null;
+            sourceName = "沙箱快照";
+            render();
+          }
+        }
+      });
 
     poll();
     setInterval(poll, POLL_MS);
