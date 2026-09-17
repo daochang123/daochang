@@ -438,10 +438,10 @@ ul.rules li{margin:4px 0}
       sim: {
         tags: ["meme", "alpha"],
         coinsA: ["PEPE", "SHIB", "WIF", "BONK", "FLOKI", "MEME"],
-        positionPct: 0.20,
-        riskPerTradePct: 0.08,
-        rrMin: 2.0,
-        holdMaxTicks: 22
+        positionPct: 0.30,
+        riskPerTradePct: 0.10,
+        rrMin: 1.5,
+        holdMaxTicks: 18
       }
     },
     {
@@ -516,10 +516,10 @@ ul.rules li{margin:4px 0}
       sim: {
         tags: ["system", "trend"],
         coinsA: ["BTC", "ETH", "SOL"],
-        positionPct: 0.25,
-        riskPerTradePct: 0.025,
-        rrMin: 1.5,
-        holdMaxTicks: 36
+        positionPct: 0.35,
+        riskPerTradePct: 0.035,
+        rrMin: 1.2,
+        holdMaxTicks: 24
       }
     },
     {
@@ -566,9 +566,9 @@ ul.rules li{margin:4px 0}
         "远离土狗/梗图币，永不借钱炒币"
       ],
       ironRules: [
-        "单币持仓≤15%，主流破50日线8%必砍、山寨5%必跑",
-        "每月只做3笔交易",
-        "只滚多不空，找确定性趋势逆转点",
+        "单币持仓≤20%，主流破50日线8%必砍、山寨5%必跑",
+        "每月最多6笔交易，短中线为主",
+        "多空双向，趋势明确时果断出手",
         "每周五雷打不动提走30%利润"
       ],
       selfCorrection: [
@@ -595,10 +595,10 @@ ul.rules li{margin:4px 0}
       sim: {
         tags: ["trend", "roll"],
         coinsA: ["BTC", "ETH", "SOL", "BNB", "DOGE"],
-        positionPct: 0.15,
-        riskPerTradePct: 0.02,
-        rrMin: 2.0,
-        holdMaxTicks: 72
+        positionPct: 0.25,
+        riskPerTradePct: 0.03,
+        rrMin: 1.5,
+        holdMaxTicks: 48
       }
     },
     {
@@ -673,10 +673,10 @@ ul.rules li{margin:4px 0}
       sim: {
         tags: ["scalp", "swing"],
         coinsA: ["BTC", "ETH", "SOL", "DOGE", "PEPE"],
-        positionPct: 0.35,
-        riskPerTradePct: 0.03,
-        rrMin: 1.2,
-        holdMaxTicks: 14
+        positionPct: 0.45,
+        riskPerTradePct: 0.04,
+        rrMin: 1.0,
+        holdMaxTicks: 12
       }
     },
     {
@@ -752,10 +752,10 @@ ul.rules li{margin:4px 0}
         tags: ["options", "iron"],
         coinsA: ["BTC", "ETH", "SOL"],
         optionsOnly: true,
-        positionPct: 0.05,
-        riskPerTradePct: 0.03,
-        rrMin: 1.5,
-        holdMaxTicks: 72
+        positionPct: 0.08,
+        riskPerTradePct: 0.04,
+        rrMin: 1.2,
+        holdMaxTicks: 48
       }
     },
     {
@@ -835,10 +835,10 @@ ul.rules li{margin:4px 0}
       sim: {
         tags: ["trend", "1+3"],
         coinsA: ["BTC", "ETH", "SOL"],
-        positionPct: 0.30,
-        riskPerTradePct: 0.02,
-        rrMin: 3.0,
-        holdMaxTicks: 64
+        positionPct: 0.40,
+        riskPerTradePct: 0.03,
+        rrMin: 2.0,
+        holdMaxTicks: 36
       }
     }
   ];
@@ -1473,7 +1473,7 @@ ul.rules li{margin:4px 0}
 
   function decideSniper(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.dayTrades >= 8) return ev; // 日内扫描窗口上限
+    if (mgr.dayTrades >= 12) return ev; // 日内扫描上限（短中线为主，适度放宽）
     if (mgr.dayLosses >= 3) return ev; // 连亏3笔停手
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
@@ -1509,17 +1509,18 @@ ul.rules li{margin:4px 0}
 
   function decideLaomao(p, mgr, coins, rng) {
     var ev = [];
-    if (mgr.monthTrades >= 12) return ev; // 月度出手上限（保命纪律）
+    if (mgr.monthTrades >= 18) return ev; // 月度出手上限（短中线为主，适度放宽）
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var c = coins[pos.coin]; if (!c) continue;
       var pnl = profit(pos, c);
-      // 滚仓复利：浮盈≥20% 即正向金字塔加仓（本金利润分离，只滚多）
+      // 滚仓复利：浮盈≥20% 即正向金字塔加仓
       if (pnl > 0.20 && pos.leverage < 1.6 && rng() < 0.25) {
         ev.push(addPyramid(p, mgr, c, pos, "盈利" + r2(pnl * 100) + "%，滚仓复利，正向金字塔加仓(1:0.6:0.3)"));
         return ev;
       }
       // 三线破位：跌破中期趋势线（近50周期）止损
-      if (c.price < c.sma50) { ev.push(closePosition(mgr, pos, c, "跌破50周期趋势线，三线定乾坤纪律止损")); continue; }
+      if (pos.side === "long" && c.price < c.sma50) { ev.push(closePosition(mgr, pos, c, "跌破50周期趋势线，三线定乾坤纪律止损")); continue; }
+      if (pos.side === "short" && c.price > c.sma50) { ev.push(closePosition(mgr, pos, c, "突破50周期趋势线，空头止损")); continue; }
       // 高位缩量 = 出货信号，落袋为主
       if (pnl > 0.4 && c.volSpike < 0.8) { ev.push(closePosition(mgr, pos, c, "高位缩量，出货信号，落袋为主")); continue; }
     }
@@ -1527,14 +1528,24 @@ ul.rules li{margin:4px 0}
     for (var i = 0; i < p.sim.coinsA.length; i++) {
       var cc = coins[p.sim.coinsA[i]]; if (!cc) continue;
       var v = viewCoin(cc);
-      // 三线定乾坤：长期转多(价>96周期) + 中期金叉(20周期上穿50周期) + 量能确认，金叉放量黄金买点
+      // 三线定乾坤（多）：长期转多 + 中期金叉 + 量能确认
       if (cc.price > cc.sma96 && cc.sma20 > cc.sma50 && v.volSpike > 1.0 && v.rsi > 50 && v.rsi < 72) {
         ev.push(openPerp(p, mgr, cc, "long", 2.2, "三线定乾坤：站上96周期+20周期金叉50周期+量能放大，金叉放量黄金买点"));
         return ev;
       }
-      // 多周期回踩：4H方向仍多 + 价格回踩50周期趋势线附近 + 未破位
+      // 多周期回踩（多）：4H方向仍多 + 价格回踩50周期趋势线附近
       else if (cc.price > cc.sma96 && cc.price > cc.sma50 * 0.985 && cc.price < cc.sma50 * 1.02 && v.rsi > 45 && v.rsi < 60) {
         ev.push(openPerp(p, mgr, cc, "long", 2.6, "多周期回踩：回踩50周期趋势线支撑未破，4H方向仍多，回踩确认买点"));
+        return ev;
+      }
+      // 三线定乾坤（空）：长期转空 + 中期死叉 + 量能确认
+      else if (cc.price < cc.sma96 && cc.sma20 < cc.sma50 && v.volSpike > 1.0 && v.rsi < 50 && v.rsi > 28) {
+        ev.push(openPerp(p, mgr, cc, "short", 2.2, "三线定乾坤（空）：跌破96周期+20周期死叉50周期+量能放大，死叉放量做空"));
+        return ev;
+      }
+      // 反弹做空（空）：4H方向仍空 + 价格反弹至50周期压力位附近
+      else if (cc.price < cc.sma96 && cc.price < cc.sma50 * 1.015 && cc.price > cc.sma50 * 0.98 && v.rsi > 40 && v.rsi < 55) {
+        ev.push(openPerp(p, mgr, cc, "short", 2.6, "反弹做空（空）：反弹50周期压力未破，4H方向仍空，确认卖点"));
         return ev;
       }
     }
@@ -2303,15 +2314,16 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         for (var j = mgr.decisions.length - 1; j >= 0; j--) items.push(makeDecisionRow(prof, mgr.decisions[j]));
       }
     } else {
+      // 先收集全部决策，再按时间降序排列，最后截取最近 120 条
+      // 修复：旧逻辑按主理人顺序收集 120 条就截断，导致某位主理人决策多时其他主理人的近期决策被漏掉
       for (var i2 = 0; i2 < PROFILES.KOLS.length; i2++) {
         var p2 = PROFILES.KOLS[i2]; var m2 = state.managers[p2.id];
         for (var j2 = m2.decisions.length - 1; j2 >= 0; j2--) {
           items.push(makeDecisionRow(p2, m2.decisions[j2]));
-          if (items.length >= 120) break;
         }
-        if (items.length >= 120) break;
       }
       items.sort(function (a, b) { return b.tick - a.tick; });
+      if (items.length > 120) items.length = 120;
     }
     setTable("decisionBody", items.map(function (r) { return r.html; }), single ? 8 : 9, single ? "该主理人暂无决策记录" : "当前窗口无决策记录");
   }
