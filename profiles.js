@@ -82,10 +82,10 @@
       sim: {
         tags: ["meme", "alpha"],
         coinsA: ["PEPE", "SHIB", "WIF", "BONK", "FLOKI", "MEME"],
-        positionPct: 0.20,
-        riskPerTradePct: 0.08,
-        rrMin: 2.0,
-        holdMaxTicks: 22
+        positionPct: 0.30,
+        riskPerTradePct: 0.10,
+        rrMin: 1.5,
+        holdMaxTicks: 18
       }
     },
     {
@@ -160,10 +160,10 @@
       sim: {
         tags: ["system", "trend"],
         coinsA: ["BTC", "ETH", "SOL"],
-        positionPct: 0.25,
-        riskPerTradePct: 0.025,
-        rrMin: 1.5,
-        holdMaxTicks: 36
+        positionPct: 0.35,
+        riskPerTradePct: 0.035,
+        rrMin: 1.2,
+        holdMaxTicks: 24
       }
     },
     {
@@ -210,9 +210,9 @@
         "远离土狗/梗图币，永不借钱炒币"
       ],
       ironRules: [
-        "单币持仓≤15%，主流破50日线8%必砍、山寨5%必跑",
-        "每月只做3笔交易",
-        "只滚多不空，找确定性趋势逆转点",
+        "单币持仓≤20%，主流破50日线8%必砍、山寨5%必跑",
+        "每月最多6笔交易，短中线为主",
+        "多空双向，趋势明确时果断出手",
         "每周五雷打不动提走30%利润"
       ],
       selfCorrection: [
@@ -239,10 +239,10 @@
       sim: {
         tags: ["trend", "roll"],
         coinsA: ["BTC", "ETH", "SOL", "BNB", "DOGE"],
-        positionPct: 0.15,
-        riskPerTradePct: 0.02,
-        rrMin: 2.0,
-        holdMaxTicks: 72
+        positionPct: 0.25,
+        riskPerTradePct: 0.03,
+        rrMin: 1.5,
+        holdMaxTicks: 48
       }
     },
     {
@@ -317,10 +317,10 @@
       sim: {
         tags: ["scalp", "swing"],
         coinsA: ["BTC", "ETH", "SOL", "DOGE", "PEPE"],
-        positionPct: 0.35,
-        riskPerTradePct: 0.03,
-        rrMin: 1.2,
-        holdMaxTicks: 14
+        positionPct: 0.45,
+        riskPerTradePct: 0.04,
+        rrMin: 1.0,
+        holdMaxTicks: 12
       }
     },
     {
@@ -396,10 +396,10 @@
         tags: ["options", "iron"],
         coinsA: ["BTC", "ETH", "SOL"],
         optionsOnly: true,
-        positionPct: 0.05,
-        riskPerTradePct: 0.03,
-        rrMin: 1.5,
-        holdMaxTicks: 72
+        positionPct: 0.08,
+        riskPerTradePct: 0.04,
+        rrMin: 1.2,
+        holdMaxTicks: 48
       }
     },
     {
@@ -479,10 +479,10 @@
       sim: {
         tags: ["trend", "1+3"],
         coinsA: ["BTC", "ETH", "SOL"],
-        positionPct: 0.30,
-        riskPerTradePct: 0.02,
-        rrMin: 3.0,
-        holdMaxTicks: 64
+        positionPct: 0.40,
+        riskPerTradePct: 0.03,
+        rrMin: 2.0,
+        holdMaxTicks: 36
       }
     }
   ];
