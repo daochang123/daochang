@@ -81,6 +81,7 @@ html[data-theme="trae-dark"] .topbar{background:rgba(12,12,13,0.94)}
 .filter-chips .chip:hover{border-color:var(--accent);color:var(--ink)}
 .filter-chips .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .chip-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.nowrap{white-space:nowrap}
 .dashboard-shell{max-width:1440px;margin:0 auto;padding:18px 20px 60px}
 .section-title{font-size:13px;color:var(--faint);font-weight:600;letter-spacing:.03em;margin:0 0 10px;text-transform:uppercase}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -284,7 +285,7 @@ ${CSS}
           <div class="panel-menu"><button class="menu-btn" onclick="showSource('操作决策日志','对 state.managers[*].decisions 聚合：tick→天, type, coin, side, detail, rationale。','每开/平仓与铁律拦截都会写入该主理人的 decisions 数组；可切换单个主理人聚焦其完整操作路径。')" title="查看数据来源">⋮</button></div>
         </div>
         <div class="filter-chips" id="decisionFilter"></div>
-        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>天</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th id="decisionThMgr">主理人</th><th>时间</th><th>动作</th><th>标的</th><th>方向</th><th>明细</th><th>决策逻辑</th></tr></thead><tbody id="decisionBody"></tbody></table></div>
       </section>
 
       <section class="dashboard-panel table-panel wide">
