@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-09-16T16:09:20.213Z",
+  "generated_at": "2026-09-17T03:03:15.669Z",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
   "startEquity": 1000,
-  "tick": 5,
-  "day": 0.2,
+  "tick": 6,
+  "day": 0.3,
   "realPriceMode": true,
   "realPrices": {
-    "BTC": 75684.98,
-    "ETH": 2390.63,
-    "SOL": 97.06,
-    "BNB": 711.26,
-    "DOGE": 0.07898,
-    "PEPE": 0.00000332,
-    "SHIB": 0.00000477,
-    "WIF": 0.1766,
-    "BONK": 0.00000246,
-    "FLOKI": 0.00002276,
-    "MEME": 0.000498
+    "BTC": 76396.01,
+    "ETH": 2430.98,
+    "SOL": 99.48,
+    "BNB": 724.6,
+    "DOGE": 0.08097,
+    "PEPE": 0.00000345,
+    "SHIB": 0.00000498,
+    "WIF": 0.1828,
+    "BONK": 0.00000267,
+    "FLOKI": 0.0000236,
+    "MEME": 0.000515
   },
   "managers": [
     {
@@ -42,15 +42,15 @@
       "name": "狙击手",
       "arena": "实盘道场",
       "equity": 1036.0101440514163,
-      "cash": 1036.0101440514163,
+      "cash": 777.0076080385622,
       "pnl": 36.01014405141632,
       "pnlPct": 0.036010144051416317,
       "realized": 36.01014405141626,
       "trades": 1,
       "winRate": 1,
       "maxDrawdown": 0.0015033527151822454,
-      "open": 0,
-      "decisions": 2,
+      "open": 1,
+      "decisions": 3,
       "evolution": 0,
       "ironBlocks": 0
     },
@@ -59,15 +59,15 @@
       "name": "老猫",
       "arena": "实盘道场",
       "equity": 1000,
-      "cash": 1000,
+      "cash": 850,
       "pnl": 0,
       "pnlPct": 0,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
       "maxDrawdown": 0,
-      "open": 0,
-      "decisions": 0,
+      "open": 1,
+      "decisions": 1,
       "evolution": 0,
       "ironBlocks": 0
     },
@@ -75,16 +75,16 @@
       "id": "aoying",
       "name": "熬鹰",
       "arena": "实盘道场",
-      "equity": 962.6574027474771,
-      "cash": 406.8675289053822,
-      "pnl": -37.342597252522864,
-      "pnlPct": -0.03734259725252286,
+      "equity": 976.1598926527078,
+      "cash": 264.46389378849847,
+      "pnl": -23.840107347292246,
+      "pnlPct": -0.023840107347292246,
       "realized": -36.99993158489407,
       "trades": 3,
       "winRate": 0,
       "maxDrawdown": 0.03734259725252286,
-      "open": 2,
-      "decisions": 8,
+      "open": 3,
+      "decisions": 9,
       "evolution": 1,
       "ironBlocks": 0
     },
@@ -92,10 +92,10 @@
       "id": "hongqigong",
       "name": "洪七公",
       "arena": "期权演武场",
-      "equity": 990.8878271655915,
+      "equity": 1018.946442973224,
       "cash": 902.5,
-      "pnl": -9.112172834408511,
-      "pnlPct": -0.009112172834408511,
+      "pnl": 18.946442973223952,
+      "pnlPct": 0.018946442973223954,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
@@ -109,36 +109,36 @@
       "id": "huanhu",
       "name": "幻狐",
       "arena": "实盘道场",
-      "equity": 950.7185840117878,
-      "cash": 490,
-      "pnl": -49.28141598821219,
-      "pnlPct": -0.04928141598821219,
+      "equity": 982.2888322437219,
+      "cash": 343,
+      "pnl": -17.711167756278087,
+      "pnlPct": -0.01771116775627809,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
       "maxDrawdown": 0.04928141598821219,
-      "open": 2,
-      "decisions": 2,
+      "open": 3,
+      "decisions": 3,
       "evolution": 0,
       "ironBlocks": 0
     }
   ],
   "market": {
     "BTC": {
-      "price": 75684.98,
-      "chgPct": -0.11
+      "price": 76396.01,
+      "chgPct": 0.94
     },
     "ETH": {
-      "price": 2390.63,
-      "chgPct": -0.08
+      "price": 2430.98,
+      "chgPct": 1.69
     },
     "SOL": {
-      "price": 97.06,
-      "chgPct": -0.15
+      "price": 99.48,
+      "chgPct": 2.49
     },
     "BNB": {
-      "price": 711.26,
-      "chgPct": -0.02
+      "price": 724.6,
+      "chgPct": 1.88
     },
     "DOGE": {
       "price": 0.08,
@@ -149,6 +149,6 @@
       "chgPct": 0
     }
   },
-  "startTick": 4,
+  "startTick": 5,
   "advancedTicks": 1
 }
