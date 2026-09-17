@@ -336,7 +336,7 @@
     };
     mgr.cash -= cost; mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
-    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "spot", side: side, detail: r2(cost), rationale: pos.rationale });
+    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "spot", side: side, detail: r2(cost), price: c.price, rationale: pos.rationale });
     return { type: "open", coin: c.sym, kind: "spot", side: side, detail: r2(cost), rationale: pos.rationale };
   }
 
@@ -434,7 +434,7 @@
     };
     mgr.cash -= margin; mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
-    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "perp", side: side, detail: r2(margin) + "U@" + r2(lev) + "x", rationale: pos.rationale });
+    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "perp", side: side, detail: r2(margin) + "U@" + r2(lev) + "x", price: c.price, rationale: pos.rationale });
     return { type: "open", coin: c.sym, kind: "perp", side: side, detail: r2(margin), rationale: pos.rationale };
   }
 
@@ -485,7 +485,7 @@
     }
     mgr.positions.push(pos);
     mgr.dayTrades++; mgr.monthTrades++;
-    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "option", side: side + (buySell === "buy" ? "/买" : "/卖"), detail: "K=" + r2(k1) + "/" + r2(k2) + " IV=" + r2(c.iv) + " 投入=" + r2(cost) + "U", rationale: rationale });
+    logDecision(mgr, { tick: stateTick(), type: "open", coin: c.sym, kind: "option", side: side + (buySell === "buy" ? "/买" : "/卖"), detail: "K=" + r2(k1) + "/" + r2(k2) + " IV=" + r2(c.iv) + " 投入=" + r2(cost) + "U", price: S, rationale: rationale });
     return { type: "open", coin: c.sym, kind: "option", side: side, detail: r2(cost), rationale: rationale };
   }
 
@@ -514,7 +514,7 @@
     var pnl = realizePnl(mgr, pos, c);
     var idx = mgr.positions.indexOf(pos);
     if (idx >= 0) mgr.positions.splice(idx, 1);
-    logDecision(mgr, { tick: stateTick(), type: "close", coin: pos.coin, side: pos.side, detail: r2(pnl) + "U", rationale: rationale });
+    logDecision(mgr, { tick: stateTick(), type: "close", coin: pos.coin, side: pos.side, detail: r2(pnl) + "U", entry: pos.entry, price: c.price, rationale: rationale });
     return { type: "close", coin: pos.coin, pnl: pnl, rationale: rationale };
   }
 
@@ -920,13 +920,12 @@
         }
       }
       stepMarket(st.market, rng, realPrices);
-      function px(x) { return +x.toPrecision(8); } // 高精度存价，避免 meme 币被 2 位小数抹平为 0
       st.priceHistory.push({ 
         t: st.tick, 
-        BTC: px(st.market.BTC.price), ETH: px(st.market.ETH.price), SOL: px(st.market.SOL.price), 
-        BNB: px(st.market.BNB.price), DOGE: px(st.market.DOGE.price),
-        PEPE: px(st.market.PEPE.price), SHIB: px(st.market.SHIB.price), WIF: px(st.market.WIF.price),
-        BONK: px(st.market.BONK.price), FLOKI: px(st.market.FLOKI.price), MEME: px(st.market.MEME.price)
+        BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price), 
+        BNB: r2(st.market.BNB.price), DOGE: r2(st.market.DOGE.price),
+        PEPE: r2(st.market.PEPE.price), SHIB: r2(st.market.SHIB.price), WIF: r2(st.market.WIF.price),
+        BONK: r2(st.market.BONK.price), FLOKI: r2(st.market.FLOKI.price), MEME: r2(st.market.MEME.price)
       });
       if (st.priceHistory.length > 6000) st.priceHistory.shift();
       for (var id in st.managers) {
