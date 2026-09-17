@@ -26,6 +26,7 @@ const SYNC_FILES = [
   "build.js",
   "snapshot.js",
   "dashboard_data.json",
+  "data/live_prices.json",
   "sync_to_github.js",
 ];
 
