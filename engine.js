@@ -920,12 +920,13 @@
         }
       }
       stepMarket(st.market, rng, realPrices);
+      function px(x) { return +x.toPrecision(8); } // 高精度存价，避免 meme 币被 2 位小数抹平为 0
       st.priceHistory.push({ 
         t: st.tick, 
-        BTC: r2(st.market.BTC.price), ETH: r2(st.market.ETH.price), SOL: r2(st.market.SOL.price), 
-        BNB: r2(st.market.BNB.price), DOGE: r2(st.market.DOGE.price),
-        PEPE: r2(st.market.PEPE.price), SHIB: r2(st.market.SHIB.price), WIF: r2(st.market.WIF.price),
-        BONK: r2(st.market.BONK.price), FLOKI: r2(st.market.FLOKI.price), MEME: r2(st.market.MEME.price)
+        BTC: px(st.market.BTC.price), ETH: px(st.market.ETH.price), SOL: px(st.market.SOL.price), 
+        BNB: px(st.market.BNB.price), DOGE: px(st.market.DOGE.price),
+        PEPE: px(st.market.PEPE.price), SHIB: px(st.market.SHIB.price), WIF: px(st.market.WIF.price),
+        BONK: px(st.market.BONK.price), FLOKI: px(st.market.FLOKI.price), MEME: px(st.market.MEME.price)
       });
       if (st.priceHistory.length > 6000) st.priceHistory.shift();
       for (var id in st.managers) {
