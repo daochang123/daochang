@@ -104,6 +104,14 @@ function loadOrInit() {
 
 function round(x) { return Math.round(x * 100) / 100; }
 function pct(x) { return (x * 100).toFixed(1) + "%"; }
+// 按数量级取合适小数位展示价格（meme 币需 4~8 位才可见）
+function fmtPrice(x) {
+  if (x == null || isNaN(x) || x === 0) return "0";
+  const a = Math.abs(x);
+  const d = a >= 1000 ? 1 : a >= 100 ? 2 : a >= 1 ? 2 : a >= 0.01 ? 4 : a >= 0.0001 ? 6 : 8;
+  const v = Number(x.toFixed(d));
+  return String(v);
+}
 
 function summarize(st) {
   return ENGINE.summary(st).map(function (r) {
@@ -129,7 +137,7 @@ function marketDelta(st, lookbackTicks) {
   const prev = ph[start] || ph[0];
   for (const s of ["BTC", "ETH", "SOL", "BNB", "DOGE", "PEPE", "SHIB", "WIF", "BONK", "FLOKI", "MEME"]) {
     const c = cur[s], p = prev[s];
-    if (c && p) out[s] = { price: round(c), chgPct: round((c / p - 1) * 100) };
+    if (c && p) out[s] = { price: fmtPrice(c), rawPrice: c, chgPct: round((c / p - 1) * 100) };
   }
   return out;
 }
