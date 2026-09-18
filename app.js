@@ -10,7 +10,7 @@
   "use strict";
 
   var SEED = 20260913;
-  var LAUNCH_TS = new Date("2026-09-13T00:00:00+08:00").getTime();
+  var LAUNCH_TS = new Date("2026-09-18T00:00:00+08:00").getTime();
   var TICK_MS = 3600000;               // 1 tick = 1 小时
   var MAX_TICKS = 2160;                // 90 天封顶
   var TICK_PER_DAY = 24;
