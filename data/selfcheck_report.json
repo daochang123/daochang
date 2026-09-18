@@ -2,9 +2,9 @@
   "checks": {
     "data_freshness": {
       "pass": true,
-      "age_hours": 0,
+      "age_hours": 0.01,
       "tick": 1,
-      "generated_at": "2026-09-17T16:39:27.009Z"
+      "generated_at": "2026-09-17T17:34:50.776Z"
     },
     "real_price_mode": {
       "pass": true,
@@ -25,22 +25,22 @@
   },
   "failures": [],
   "status": "pass",
-  "generated_at": "2026-09-17T16:39:32.359Z",
+  "generated_at": "2026-09-17T17:35:35.429Z",
   "price_snapshot": null,
   "live_vs_snapshot": {
     "source": "binance-vision",
     "drift_pct": {
-      "BTC": 0.024,
-      "ETH": 0.026,
-      "SOL": 0.02,
-      "BNB": 0.018,
-      "DOGE": 0.012,
+      "BTC": -0.02,
+      "ETH": -0.033,
+      "SOL": -0.118,
+      "BNB": -0.005,
+      "DOGE": -0.037,
       "PEPE": 0,
       "SHIB": 0,
-      "WIF": 0,
+      "WIF": -0.266,
       "BONK": 0,
       "FLOKI": 0,
-      "MEME": 0
+      "MEME": -0.19
     }
   }
 }
