@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-09-18T17:01:22.815Z",
+  "generated_at": "2026-09-18T18:00:53.704Z",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
   "startEquity": 1000,
-  "tick": 3,
-  "day": 0.1,
+  "tick": 4,
+  "day": 0.2,
   "realPriceMode": true,
   "priceSource": "binance-vision",
   "realPrices": {
-    "BTC": 80856.17,
-    "ETH": 2594.51,
-    "BNB": 758.34,
-    "DOGE": 0.08762,
-    "SOL": 111.58,
+    "BTC": 80921.7,
+    "ETH": 2604,
+    "BNB": 760.95,
+    "DOGE": 0.08743,
+    "SOL": 112.4,
     "SHIB": 0.00000545,
     "PEPE": 0.00000382,
-    "FLOKI": 0.00002555,
-    "MEME": 0.000554,
-    "BONK": 0.0000029,
-    "WIF": 0.2035
+    "FLOKI": 0.00002561,
+    "MEME": 0.000556,
+    "BONK": 0.00000293,
+    "WIF": 0.2051
   },
   "managers": [
     {
@@ -59,14 +59,14 @@
       "id": "laomao",
       "name": "老猫",
       "arena": "实盘道场",
-      "equity": 1000.6433336720058,
+      "equity": 998.913665642621,
       "cash": 562.5,
-      "pnl": 0.6433336720058378,
-      "pnlPct": 0.0006433336720058378,
+      "pnl": -1.0863343573789734,
+      "pnlPct": -0.0010863343573789734,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
-      "maxDrawdown": 0.000914782929324474,
+      "maxDrawdown": 0.0017285559911117815,
       "open": 2,
       "decisions": 2,
       "evolution": 0,
@@ -76,16 +76,16 @@
       "id": "aoying",
       "name": "熬鹰",
       "arena": "实盘道场",
-      "equity": 998.9491279911815,
-      "cash": 166.375,
-      "pnl": -1.0508720088184873,
-      "pnlPct": -0.0010508720088184874,
+      "equity": 995.9909614442884,
+      "cash": 91.50625,
+      "pnl": -4.009038555711641,
+      "pnlPct": -0.00400903855571164,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
-      "maxDrawdown": 0.0034566327843685383,
-      "open": 3,
-      "decisions": 3,
+      "maxDrawdown": 0.006407675203669357,
+      "open": 4,
+      "decisions": 4,
       "evolution": 0,
       "ironBlocks": 0
     },
@@ -93,10 +93,10 @@
       "id": "hongqigong",
       "name": "洪七公",
       "arena": "期权演武场",
-      "equity": 1021.3851073426279,
+      "equity": 1046.0688481003822,
       "cash": 859.980383949208,
-      "pnl": 21.38510734262786,
-      "pnlPct": 0.02138510734262786,
+      "pnl": 46.06884810038218,
+      "pnlPct": 0.046068848100382184,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
@@ -110,10 +110,10 @@
       "id": "huanhu",
       "name": "幻狐",
       "arena": "实盘道场",
-      "equity": 1021.6837175638204,
+      "equity": 1052.9807414537618,
       "cash": 216,
-      "pnl": 21.683717563820437,
-      "pnlPct": 0.021683717563820436,
+      "pnl": 52.980741453761766,
+      "pnlPct": 0.05298074145376177,
       "realized": 0,
       "trades": 0,
       "winRate": 0,
@@ -126,24 +126,24 @@
   ],
   "market": {
     "BTC": {
-      "price": 80856.17,
-      "chgPct": 0.19
+      "price": 80921.7,
+      "chgPct": 0.08
     },
     "ETH": {
-      "price": 2594.51,
-      "chgPct": 0.5
+      "price": 2604,
+      "chgPct": 0.37
     },
     "SOL": {
-      "price": 111.58,
-      "chgPct": 0.39
+      "price": 112.4,
+      "chgPct": 0.73
     },
     "BNB": {
-      "price": 758.34,
-      "chgPct": 0.15
+      "price": 760.95,
+      "chgPct": 0.34
     },
     "DOGE": {
-      "price": 0.0877,
-      "chgPct": 0.23
+      "price": 0.0875,
+      "chgPct": -0.23
     },
     "PEPE": {
       "price": 0.00000382,
@@ -151,25 +151,25 @@
     },
     "SHIB": {
       "price": 0.00000545,
-      "chgPct": -0.55
+      "chgPct": 0
     },
     "WIF": {
-      "price": 0.2035,
-      "chgPct": -2.4
+      "price": 0.2051,
+      "chgPct": 0.79
     },
     "BONK": {
-      "price": 0.0000029,
-      "chgPct": -0.34
+      "price": 0.00000293,
+      "chgPct": 1.03
     },
     "FLOKI": {
-      "price": 0.00002555,
-      "chgPct": -0.58
+      "price": 0.00002561,
+      "chgPct": 0.23
     },
     "MEME": {
-      "price": 0.000554,
-      "chgPct": -0.54
+      "price": 0.000556,
+      "chgPct": 0.36
     }
   },
-  "startTick": 2,
+  "startTick": 3,
   "advancedTicks": 1
 }
