@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-09-22T00:05:29.133Z",
+  "generated_at": "2026-09-22T02:04:39.300Z",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
   "startEquity": 1000,
-  "tick": 55,
+  "tick": 56,
   "day": 2.3,
   "realPriceMode": true,
   "priceSource": "binance-vision",
   "realPrices": {
-    "BTC": 86455.96,
-    "ETH": 2772.14,
-    "BNB": 798.5,
-    "DOGE": 0.10009,
-    "SOL": 118.79,
-    "SHIB": 0.00000604,
-    "PEPE": 0.0000048,
-    "FLOKI": 0.00002896,
+    "BTC": 85551.81,
+    "ETH": 2745.59,
+    "BNB": 788.56,
+    "DOGE": 0.10001,
+    "SOL": 117.47,
+    "SHIB": 0.00000601,
+    "PEPE": 0.00000511,
+    "FLOKI": 0.00002889,
     "MEME": 0.000616,
-    "BONK": 0.00000337,
-    "WIF": 0.2454
+    "BONK": 0.00000344,
+    "WIF": 0.2474
   },
   "managers": [
     {
       "id": "lanniaohui",
       "name": "蓝鸟会",
       "arena": "实盘道场",
-      "equity": 1081.673538680453,
+      "equity": 1080.20343774819,
       "cash": 247.8601749317708,
-      "pnl": 81.67353868045302,
-      "pnlPct": 0.08167353868045302,
+      "pnl": 80.20343774819003,
+      "pnlPct": 0.08020343774819003,
       "realized": 76.99909678104368,
       "trades": 13,
       "winRate": 0.6153846153846154,
@@ -76,16 +76,16 @@
       "id": "aoying",
       "name": "熬鹰",
       "arena": "实盘道场",
-      "equity": 989.8159993058073,
-      "cash": 242.54343960486193,
-      "pnl": -10.184000694192719,
-      "pnlPct": -0.01018400069419272,
-      "realized": -18.123696713350725,
-      "trades": 30,
-      "winRate": 0.4666666666666667,
+      "equity": 1001.9118235857013,
+      "cash": 237.10455016580528,
+      "pnl": 1.9118235857013133,
+      "pnlPct": 0.0019118235857013132,
+      "realized": -9.647762923688664,
+      "trades": 31,
+      "winRate": 0.4838709677419355,
       "maxDrawdown": 0.039671700972601136,
       "open": 3,
-      "decisions": 63,
+      "decisions": 65,
       "evolution": 8,
       "ironBlocks": 0
     },
@@ -93,10 +93,10 @@
       "id": "hongqigong",
       "name": "洪七公",
       "arena": "期权演武场",
-      "equity": 894.1871836524713,
+      "equity": 899.299473772285,
       "cash": 743.5210531559604,
-      "pnl": -105.81281634752872,
-      "pnlPct": -0.10581281634752872,
+      "pnl": -100.70052622771505,
+      "pnlPct": -0.10070052622771504,
       "realized": -124.7883593458362,
       "trades": 3,
       "winRate": 0,
@@ -110,10 +110,10 @@
       "id": "huanhu",
       "name": "幻狐",
       "arena": "实盘道场",
-      "equity": 1086.2503034734636,
+      "equity": 1058.6169143844775,
       "cash": 211.55242571863582,
-      "pnl": 86.25030347346365,
-      "pnlPct": 0.08625030347346364,
+      "pnl": 58.61691438447747,
+      "pnlPct": 0.05861691438447747,
       "realized": -20.590621672981868,
       "trades": 5,
       "winRate": 0.6,
@@ -126,50 +126,50 @@
   ],
   "market": {
     "BTC": {
-      "price": 86455.96,
-      "chgPct": -0.16
+      "price": 85551.81,
+      "chgPct": -1.05
     },
     "ETH": {
-      "price": 2772.14,
-      "chgPct": -0.48
+      "price": 2745.59,
+      "chgPct": -0.96
     },
     "SOL": {
-      "price": 118.79,
-      "chgPct": -0.75
+      "price": 117.47,
+      "chgPct": -1.11
     },
     "BNB": {
-      "price": 798.5,
-      "chgPct": -0.57
+      "price": 788.56,
+      "chgPct": -1.24
     },
     "DOGE": {
-      "price": 0.1001,
-      "chgPct": -1.38
+      "price": 0.1,
+      "chgPct": -0.1
     },
     "PEPE": {
-      "price": 0.0000048,
-      "chgPct": -0.41
+      "price": 0.00000511,
+      "chgPct": 6.46
     },
     "SHIB": {
-      "price": 0.00000604,
-      "chgPct": -0.98
+      "price": 0.00000601,
+      "chgPct": -0.5
     },
     "WIF": {
-      "price": 0.2456,
-      "chgPct": -0.12
+      "price": 0.2474,
+      "chgPct": 0.73
     },
     "BONK": {
-      "price": 0.00000337,
-      "chgPct": -0.88
+      "price": 0.00000344,
+      "chgPct": 2.08
     },
     "FLOKI": {
-      "price": 0.00002896,
-      "chgPct": -0.92
+      "price": 0.00002891,
+      "chgPct": -0.17
     },
     "MEME": {
       "price": 0.000616,
-      "chgPct": -0.32
+      "chgPct": 0
     }
   },
-  "startTick": 54,
+  "startTick": 55,
   "advancedTicks": 1
 }
