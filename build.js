@@ -14,7 +14,6 @@ function read(p) { return fs.readFileSync(p, "utf8"); }
 
 const profilesSrc = read(path.join(DIR, "profiles.js"));
 const engineSrc = read(path.join(DIR, "engine.js"));
-const datafeedSrc = read(path.join(DIR, "datafeed.js"));
 const appSrc = read(path.join(DIR, "app.js"));
 const echartsSrc = read(path.join(SKILL, "assets", "echarts.min.js"));
 
@@ -381,8 +380,6 @@ ${profilesSrc}
 ${engineSrc}
 /* echarts（图表运行时） */
 ${echartsSrc}
-/* datafeed（统一实时行情数据层 · 推送优先 · 多源降级） */
-${datafeedSrc}
 /* app（看板运行时） */
 ${appSrc}
 /* 启动看板运行时 */
