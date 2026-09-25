@@ -728,15 +728,12 @@
     renderIronRules(); renderKpi(); renderRanking(); renderDecisions(); renderEvolution(); renderPositions(); renderDailyReview();
   }
 
-  // ---------- 实时行情（统一数据层 · 推送优先 · 真·秒级 · 多源自动降级） ----------
-  // 取数全部交给 MarketDataFeed（datafeed.js）：WebSocket 推送 → REST 轮询 → 同源快照。
-  // 本函数只负责渲染，与取数彻底解耦（Hummingbot：MarketDataProvider 单一数据入口）。
-  // 主流币 TOP10（市值排名，剔除稳定币）；Meme 币为主理人严选（剔除高风险割韭菜币）
+  // ---------- 实时行情（国内可直连 · 秒级 · 多源降级 · 参考行情，不参与每小时结算） ----------
+  // 主流币 TOP10（市值排名，剔除稳定币）；Meme 币为主理人严选（主流、有真实流动性与社区支撑，剔除高风险割韭菜币）
   function initLiveTicker() {
     var mainGrid = $("liveMainGrid");
     var memeGrid = $("liveMemeGrid");
-    if (!mainGrid && !memeGrid) return;
-    if (!window.MarketDataFeed) return;
+    if ((!mainGrid && !memeGrid) || !("fetch" in window)) return;
 
     var MAINSTREAM = [
       { rank: 1, sym: "BTC" }, { rank: 2, sym: "ETH" }, { rank: 3, sym: "XRP" },
@@ -745,6 +742,15 @@
     ];
     var MEMES = ["DOGE", "SHIB", "PEPE", "WIF", "BONK", "FLOKI"];
     var ALL = MAINSTREAM.map(function (c) { return c.sym; }).concat(MEMES);
+
+    var data = {}; // sym -> { price, chg }
+    var sourceName = "连接中";
+    var snapshotTime = null;
+    var inFlight = false;
+    var POLL_MS = 1500;
+    // 仅 http/https 页面才发起浏览器直连交易所：file:// 或预览沙箱的 opaque 协议下，
+    // 跨域直连会被浏览器 net::ERR_ABORTED 拦截并刷屏，此时改用同源沙箱快照，绝不直连。
+    var USE_DIRECT = /^https?:$/.test(window.location.protocol);
 
     // 交易跳转目标（国内可直连优先；如需切换交易所改这里）
     var EXCHANGE = {
@@ -760,77 +766,130 @@
       return p.toFixed(8);
     }
 
-    function coinCard(sym, rank, d) {
+    // 源 1：Binance 官方镜像域名（data-api.binance.vision，国内可直连，CORS 放开）
+    function fetchBinance() {
+      var q = ALL.map(function (s) { return '"' + s + 'USDT"'; }).join(",");
+      return fetch("https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + encodeURIComponent("[" + q + "]"), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("binance " + r.status); return r.json(); })
+        .then(function (arr) {
+          for (var i = 0; i < arr.length; i++) {
+            var it = arr[i]; var sym = it.symbol.replace("USDT", "");
+            data[sym] = { price: parseFloat(it.lastPrice), chg: parseFloat(it.priceChangePercent) };
+          }
+          sourceName = "Binance 镜像";
+        });
+    }
+    // 源 2（兜底）：Gate.io 现货 ticker（.ws 域名，国内可直连，CORS 放开）
+    function fetchGate() {
+      var q = ALL.map(function (s) { return s + "_USDT"; }).join(",");
+      return fetch("https://api.gateio.ws/api/v4/spot/tickers?currency_pair=" + encodeURIComponent(q), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("gate " + r.status); return r.json(); })
+        .then(function (arr) {
+          for (var i = 0; i < arr.length; i++) {
+            var it = arr[i]; var sym = (it.currency_pair || "").split("_")[0];
+            data[sym] = { price: parseFloat(it.last), chg: parseFloat(it.change_percentage) };
+          }
+          sourceName = "Gate.io";
+        });
+    }
+
+    function poll() {
+      if (!USE_DIRECT || inFlight) return;
+      inFlight = true;
+      fetchBinance().catch(fetchGate)
+        .then(function () { inFlight = false; render(); })
+        .catch(function () { inFlight = false; });
+    }
+
+    function coinCard(sym, rank) {
       var href = EXCHANGE.tradeUrl(sym);
-      if (!d || !(d.last > 0)) {
+      var d = data[sym];
+      if (!d) {
         return '<a class="coin-card" href="' + href + '" target="_blank" rel="noopener" title="点击前往 ' + EXCHANGE.name + ' 交易 ' + sym + '/USDT">' +
           '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + sym + '</span>' +
           '<span class="cc-chg cc-pending">—</span></div>' +
           '<div class="cc-price cc-pending">等待数据…</div></a>';
       }
-      var chg = d.percentage || 0;
-      var cls = chg >= 0 ? "up" : "down";
-      var sign = chg >= 0 ? "+" : "";
+      var cls = d.chg >= 0 ? "up" : "down";
+      var sign = d.chg >= 0 ? "+" : "";
       return '<a class="coin-card ' + cls + '" href="' + href + '" target="_blank" rel="noopener" title="点击前往 ' + EXCHANGE.name + ' 交易 ' + sym + '/USDT">' +
         '<div class="cc-top"><span class="cc-rank">' + (rank || "") + '</span><span class="cc-sym">' + sym + '</span>' +
-        '<span class="cc-chg">' + sign + chg.toFixed(2) + '%</span></div>' +
-        '<div class="cc-price">$' + fmtPx(d.last) + '</div></a>';
+        '<span class="cc-chg">' + sign + d.chg.toFixed(2) + '%</span></div>' +
+        '<div class="cc-price">$' + fmtPx(d.price) + '</div></a>';
     }
 
-    function agoText(ms) {
-      if (ms < 1000) return "刚刚";
-      if (ms < 60000) return Math.round(ms / 1000) + "s";
-      var m = Math.round(ms / 60000);
-      if (m < 60) return m + " 分钟";
-      var h = Math.round(m / 60);
-      if (h < 24) return h + " 小时";
-      return Math.round(h / 24) + " 天";
-    }
-
-    // 渲染：只读 MarketDataFeed.snapshot()，不再包含任何取数逻辑
     function render() {
-      var snap = window.MarketDataFeed.snapshot() || {};
       if (mainGrid) {
         var h = "";
-        for (var i = 0; i < MAINSTREAM.length; i++) h += coinCard(MAINSTREAM[i].sym, MAINSTREAM[i].rank, snap[MAINSTREAM[i].sym]);
+        for (var i = 0; i < MAINSTREAM.length; i++) h += coinCard(MAINSTREAM[i].sym, MAINSTREAM[i].rank);
         mainGrid.innerHTML = h;
       }
       if (memeGrid) {
         var m = "";
-        for (var j = 0; j < MEMES.length; j++) m += coinCard(MEMES[j], "", snap[MEMES[j]]);
+        for (var j = 0; j < MEMES.length; j++) m += coinCard(MEMES[j], "");
         memeGrid.innerHTML = m;
       }
-      var stamp = $("liveStamp");
-      if (!stamp) return;
-      var st = window.MarketDataFeed.status();
-      if (!st || st.source === "连接中") { stamp.textContent = "正在连接行情源…"; return; }
-      var kindTxt = st.kind === "ws" ? "WebSocket 推送（真·秒级）"
-        : st.kind === "rest" ? "REST 轮询兜底"
-          : "同源快照兜底";
-      var label = "更新于 " + new Date().toLocaleTimeString("zh-CN", { hour12: false }) +
-        " · " + st.source + " · " + kindTxt;
-      if (st.ageMs != null) label += " · " + agoText(st.ageMs) + "前";
-      stamp.textContent = label;
+      if ($("liveStamp")) {
+        var t = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+        var label = "更新于 " + t;
+        if (sourceName === "沙箱快照") {
+          label += " · 数据源：沙箱快照" + (snapshotTime ? "（" + agoText(snapshotTime) + "前）" : "");
+        } else if (sourceName === "连接中") {
+          label += " · 正在连接行情源…";
+        } else {
+          label += " · 数据源：" + sourceName + "（秒级）";
+        }
+        $("liveStamp").textContent = label;
+      }
     }
 
-    // 渲染节流：推送密集时合并到下一帧，避免高频重排
-    var rafPending = false;
-    function scheduleRender() {
-      if (rafPending) return;
-      rafPending = true;
-      var raf = window.requestAnimationFrame || function (cb) { return setTimeout(cb, 16); };
-      raf(function () { rafPending = false; render(); });
+    function agoText(iso) {
+      try {
+        var ms = Date.now() - new Date(iso).getTime();
+        var m = Math.round(ms / 60000);
+        if (m < 1) return "刚刚";
+        if (m < 60) return m + " 分钟";
+        var h = Math.round(m / 60);
+        if (h < 24) return h + " 小时";
+        return Math.round(h / 24) + " 天";
+      } catch (e) { return ""; }
     }
 
-    // 取数完全委托给统一数据层：WS 推送 → REST → 同源快照，自动降级与升级回切
-    window.MarketDataFeed.init({
-      symbols: ALL,
-      onTick: function () { scheduleRender(); },
-      onStatus: function () { scheduleRender(); }
-    });
+    // 兜底：读取同源沙箱快照（Node 端定时抓取，浏览器直连海外源失败/被禁时仍能显示真实行情）
+    function loadSnapshot(done) {
+      fetch("data/live_prices.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (sp) {
+          if (sp && sp.prices) {
+            var filled = false;
+            for (var i = 0; i < ALL.length; i++) {
+              var s = ALL[i], it = sp.prices[s];
+              if (it && typeof it.price === "number" && it.price > 0) {
+                data[s] = { price: it.price, chg: (typeof it.chg === "number" ? it.chg : 0) };
+                filled = true;
+              }
+            }
+            if (filled) {
+              snapshotTime = sp.generated_at || null;
+              sourceName = "沙箱快照";
+              render();
+            }
+          }
+          if (done) done();
+        });
+    }
 
-    // 每秒刷新一次新鲜度标签（即使无新推送，也能反映数据年龄）
-    setInterval(render, 1000);
+    // 秒级刷新：固定 1.5s 一个节拍，保证数据始终同步真实交易所行情。
+    //  - http/https 页面：直连交易所多源拉真实价（Binance → Gate），秒级同步；
+    //  - 预览/文件协议页面：浏览器无法跨域直连（会 net::ERR_ABORTED 刷屏），
+    //    改读同源沙箱快照 data/live_prices.json（同为服务端抓取的真实价，绝不回退合成数据）。
+    setInterval(function () {
+      if (USE_DIRECT) poll(); else loadSnapshot();
+    }, POLL_MS);
+
+    loadSnapshot();
+    poll();
     render();
   }
 
