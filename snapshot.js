@@ -116,7 +116,7 @@ function main() {
   ensureDir();
 
   // 1. 稳健多源拉取真实价格；失败则跳过推进并告警退出（绝不回退合成行情）
-  const fetched = MARKET.fetchPricesDetailed();
+  const fetched = MARKET.fetchPrices();
   if (!fetched) {
     const err = writeError("真实行情获取失败（Binance/Gate/Bybit 全部不可达或关键币缺失），本 tick 跳过推进");
     console.error("[snapshot] ❌ " + err.message);
@@ -169,9 +169,6 @@ function main() {
     day: parseFloat(day),
     realPriceMode: true,
     priceSource: sourceName,
-    priceLatencyMs: fetched.latencyMs,
-    priceAttempts: fetched.attempts,
-    providers: MARKET.providerStatus(),
     realPrices: realPrices,
     managers: summary,
     market: mkt,
@@ -183,26 +180,12 @@ function main() {
   // 清除历史错误标记（本次成功）
   if (fs.existsSync(ERROR_FILE)) try { fs.unlinkSync(ERROR_FILE); } catch (e) {}
 
-  // 5. 展示用实时行情快照（统一 Ticker 模型，供浏览器 datafeed 兜底读取）
+  // 5. 展示用实时行情快照（供前端直连失败时兜底）
   const tickerPx = MARKET.fetchTickers();
-  const snapTs = Date.now();
-  const snapPrices = {};
-  if (tickerPx) {
-    for (const sym in tickerPx) {
-      snapPrices[sym] = {
-        last: tickerPx[sym].price,
-        percentage: tickerPx[sym].chg,
-        timestamp: tickerPx[sym].ts || snapTs,
-        source: sourceName
-      };
-    }
-  }
   fs.writeFileSync(LIVE_PRICES_FILE, JSON.stringify({
-    generated_at: new Date(snapTs).toISOString(),
-    ts: snapTs,
+    generated_at: new Date().toISOString(),
     source: tickerPx ? sourceName : "unavailable",
-    timezone: "Asia/Shanghai",
-    prices: snapPrices
+    prices: tickerPx || {}
   }));
 
   // ---------- 推送报告（stdout） ----------
