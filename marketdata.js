@@ -62,15 +62,24 @@ function fromBinance(baseUrl) {
 function fetchBinanceVision() { return fromBinance("https://data-api.binance.vision"); }
 function fetchBinanceApi() { return fromBinance("https://api.binance.com"); }
 
-function fetchGate() {
-  const q = TRADE_COINS.map((c) => c[0] + "_USDT").join(",");
-  const arr = jsonFrom("https://api.gateio.ws/api/v4/spot/tickers?currency_pair=" + encodeURIComponent(q), 12);
+function gatePairOne(pair) {
+  const arr = jsonFrom("https://api.gateio.ws/api/v4/spot/tickers?currency_pair=" + encodeURIComponent(pair), 12);
   if (!Array.isArray(arr) || !arr.length) throw new Error("gate tickers parse fail");
+  const px = parseFloat(arr[0].last);
+  if (px <= 0) throw new Error("gate price not positive");
+  return px;
+}
+
+function fetchGate() {
+  // Gate.io 现货 tickers 接口每次仅接受单个 currency_pair（逗号多币会报 INVALID_CURRENCY_PAIR），
+  // 故逐币查询并聚合。
   const prices = {};
-  for (const it of arr) {
-    const coin = String(it.currency_pair || "").split("_")[0];
-    const px = parseFloat(it.last);
-    if (coin && px > 0) prices[coin] = px;
+  for (let i = 0; i < TRADE_COINS.length; i++) {
+    const pair = TRADE_COINS[i][0] + "_USDT";
+    try {
+      const px = gatePairOne(pair);
+      if (px > 0) prices[TRADE_COINS[i][0]] = px;
+    } catch (e) { /* 单币失败则跳过，validate 决定整体是否通过 */ }
   }
   return prices;
 }
@@ -134,9 +143,21 @@ function fetchTickers() {
       return arr.map((it) => ({ sym: it.symbol.replace("USDT", ""), price: parseFloat(it.lastPrice) || 0, chg: parseFloat(it.priceChangePercent) || 0 }));
     },
     function () {
-      const pairs = DISPLAY_COINS.map((s) => s.replace("USDT", "") + "_USDT").join(",");
-      const arr = jsonFrom("https://api.gateio.ws/api/v4/spot/tickers?currency_pair=" + encodeURIComponent(pairs), 15);
-      return arr.map((it) => ({ sym: it.currency_pair.split("_")[0], price: parseFloat(it.last) || 0, chg: parseFloat(it.change_percentage) || 0 }));
+      // Gate.io 逐币查询（接口不支持逗号多币），聚合 price + 24h 涨跌幅
+      const pairs = DISPLAY_COINS.map((s) => s.replace("USDT", "") + "_USDT");
+      const out = [];
+      for (let i = 0; i < pairs.length; i++) {
+        try {
+          const arr = jsonFrom("https://api.gateio.ws/api/v4/spot/tickers?currency_pair=" + encodeURIComponent(pairs[i]), 15);
+          if (!Array.isArray(arr) || !arr.length) continue;
+          out.push({
+            sym: pairs[i].split("_")[0],
+            price: parseFloat(arr[0].last) || 0,
+            chg: parseFloat(arr[0].change_percentage) || 0
+          });
+        } catch (e) { /* 单币失败跳过 */ }
+      }
+      return out;
     }
   ];
   for (let i = 0; i < sources.length; i++) {
