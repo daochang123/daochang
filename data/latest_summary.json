@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-10-08T04:03:42.592Z",
+  "generated_at": "2026-10-08T05:02:04.396Z",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
   "startEquity": 1000,
-  "tick": 207,
-  "day": 8.6,
+  "tick": 208,
+  "day": 8.7,
   "realPriceMode": true,
   "priceSource": "binance-vision",
   "realPrices": {
-    "BTC": 82659.46,
-    "ETH": 2560.6,
-    "BNB": 769.18,
-    "DOGE": 0.08845,
-    "SOL": 115.55,
-    "SHIB": 0.00000541,
-    "PEPE": 0.00000406,
-    "FLOKI": 0.00002728,
+    "BTC": 82718.7,
+    "ETH": 2564.52,
+    "BNB": 768.39,
+    "DOGE": 0.08751,
+    "SOL": 115.25,
+    "SHIB": 0.0000054,
+    "PEPE": 0.00000405,
+    "FLOKI": 0.00002718,
     "MEME": 0.000564,
-    "BONK": 0.00000346,
-    "WIF": 0.2275
+    "BONK": 0.00000344,
+    "WIF": 0.2258
   },
   "managers": [
     {
       "id": "lanniaohui",
       "name": "蓝鸟会",
       "arena": "实盘道场",
-      "equity": 1068.9414228794847,
+      "equity": 1065.241932213162,
       "cash": 396.3871029455692,
-      "pnl": 68.94142287948466,
-      "pnlPct": 0.06894142287948467,
+      "pnl": 65.24193221316204,
+      "pnlPct": 0.06524193221316205,
       "realized": 71.19763016574962,
       "trades": 31,
       "winRate": 0.41935483870967744,
-      "maxDrawdown": 0.07166603958139199,
+      "maxDrawdown": 0.07366781411506446,
       "open": 4,
       "decisions": 66,
       "evolution": 15,
@@ -42,10 +42,10 @@
       "id": "sniper",
       "name": "狙击手",
       "arena": "实盘道场",
-      "equity": 971.841783776453,
+      "equity": 966.2226044780368,
       "cash": 484.43125083377726,
-      "pnl": -28.158216223547015,
-      "pnlPct": -0.028158216223547014,
+      "pnl": -33.77739552196317,
+      "pnlPct": -0.03377739552196317,
       "realized": -39.65006463525966,
       "trades": 20,
       "winRate": 0.3,
@@ -93,10 +93,10 @@
       "id": "hongqigong",
       "name": "洪七公",
       "arena": "期权演武场",
-      "equity": 762.4083538644702,
+      "equity": 740.0460647902548,
       "cash": 646.752766105263,
-      "pnl": -237.5916461355298,
-      "pnlPct": -0.2375916461355298,
+      "pnl": -259.95393520974517,
+      "pnlPct": -0.2599539352097452,
       "realized": -230.04538922167598,
       "trades": 6,
       "winRate": 0,
@@ -110,10 +110,10 @@
       "id": "huanhu",
       "name": "幻狐",
       "arena": "实盘道场",
-      "equity": 1062.389640346382,
+      "equity": 1056.4544927988622,
       "cash": 212.05557823596334,
-      "pnl": 62.389640346382066,
-      "pnlPct": 0.062389640346382065,
+      "pnl": 56.45449279886225,
+      "pnlPct": 0.05645449279886225,
       "realized": -18.261211870539686,
       "trades": 24,
       "winRate": 0.4166666666666667,
@@ -126,50 +126,50 @@
   ],
   "market": {
     "BTC": {
-      "price": 82659.46,
-      "chgPct": -0.58
+      "price": 82718.7,
+      "chgPct": 0.07
     },
     "ETH": {
-      "price": 2560.6,
-      "chgPct": -0.78
+      "price": 2564.52,
+      "chgPct": 0.15
     },
     "SOL": {
-      "price": 115.55,
-      "chgPct": -0.57
+      "price": 115.25,
+      "chgPct": -0.26
     },
     "BNB": {
-      "price": 769.18,
-      "chgPct": -0.5
+      "price": 768.39,
+      "chgPct": -0.1
     },
     "DOGE": {
-      "price": 0.0885,
-      "chgPct": -0.67
+      "price": 0.0876,
+      "chgPct": -1.02
     },
     "PEPE": {
-      "price": 0.00000406,
-      "chgPct": -0.98
+      "price": 0.00000405,
+      "chgPct": -0.25
     },
     "SHIB": {
-      "price": 0.00000541,
-      "chgPct": -0.55
+      "price": 0.0000054,
+      "chgPct": -0.18
     },
     "WIF": {
-      "price": 0.2276,
-      "chgPct": -1.56
+      "price": 0.226,
+      "chgPct": -0.7
     },
     "BONK": {
-      "price": 0.00000346,
-      "chgPct": -0.86
+      "price": 0.00000344,
+      "chgPct": -0.58
     },
     "FLOKI": {
-      "price": 0.0000273,
-      "chgPct": -1.02
+      "price": 0.0000272,
+      "chgPct": -0.37
     },
     "MEME": {
       "price": 0.000564,
-      "chgPct": -1.05
+      "chgPct": 0
     }
   },
-  "startTick": 206,
+  "startTick": 207,
   "advancedTicks": 1
 }
