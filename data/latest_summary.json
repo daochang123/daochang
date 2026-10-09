@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-10-09T22:01:34.349Z",
+  "generated_at": "2026-10-09T23:15:59.353Z",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
   "startEquity": 1000,
-  "tick": 3,
-  "day": 0.1,
+  "tick": 511,
+  "day": 21.3,
   "realPriceMode": true,
   "priceSource": "binance-vision",
-  "priceLatencyMs": 317,
+  "priceLatencyMs": 331,
   "priceAttempts": [
     {
       "source": "binance-vision",
       "ok": true,
-      "ms": 317
+      "ms": 331
     }
   ],
   "providers": [
@@ -21,10 +21,10 @@
       "priority": 1,
       "ok": 1,
       "fail": 0,
-      "lastOkAt": 1791583294341,
+      "lastOkAt": 1791587754051,
       "lastErrAt": 0,
       "lastErr": "",
-      "lastLatencyMs": 317
+      "lastLatencyMs": 331
     },
     {
       "name": "binance-api",
@@ -58,168 +58,171 @@
     }
   ],
   "realPrices": {
-    "BTC": 82500.64,
-    "ETH": 2483.42,
-    "BNB": 742.09,
-    "DOGE": 0.08524,
-    "SOL": 108.83,
-    "SHIB": 0.00000548,
+    "BTC": 82628.04,
+    "ETH": 2487.96,
+    "BNB": 742.49,
+    "DOGE": 0.08527,
+    "SOL": 109.14,
+    "SHIB": 0.00000545,
     "PEPE": 0.00000395,
-    "FLOKI": 0.00002739,
-    "MEME": 0.000563,
+    "FLOKI": 0.00002813,
+    "MEME": 0.000568,
     "BONK": 0.00000337,
-    "WIF": 0.2135
+    "WIF": 0.2154
   },
   "managers": [
     {
       "id": "lanniaohui",
       "name": "蓝鸟会",
       "arena": "实盘道场",
-      "equity": 1000,
-      "cash": 1000,
-      "pnl": 0,
-      "pnlPct": 0,
-      "realized": 0,
-      "trades": 0,
-      "winRate": 0,
-      "maxDrawdown": 0,
-      "open": 0,
-      "decisions": 0,
-      "evolution": 0,
+      "equity": 1130.8992054760342,
+      "cash": 496.00748417558975,
+      "pnl": 130.89920547603424,
+      "pnlPct": 0.13089920547603423,
+      "realized": 122.72030024761352,
+      "trades": 92,
+      "winRate": 0.3804347826086957,
+      "maxDrawdown": 0.08026157924301434,
+      "open": 4,
+      "decisions": 188,
+      "evolution": 42,
       "ironBlocks": 0
     },
     {
       "id": "sniper",
       "name": "狙击手",
       "arena": "实盘道场",
-      "equity": 1000,
-      "cash": 650,
-      "pnl": 0,
-      "pnlPct": 0,
-      "realized": 0,
-      "trades": 0,
-      "winRate": 0,
-      "maxDrawdown": 0,
-      "open": 1,
-      "decisions": 1,
-      "evolution": 0,
+      "equity": 940.4438991406189,
+      "cash": 940.4438991406189,
+      "pnl": -59.556100859381104,
+      "pnlPct": -0.0595561008593811,
+      "realized": -59.5561008593809,
+      "trades": 31,
+      "winRate": 0.25806451612903225,
+      "maxDrawdown": 0.1157411290113172,
+      "open": 0,
+      "decisions": 62,
+      "evolution": 23,
       "ironBlocks": 0
     },
     {
       "id": "laomao",
       "name": "老猫",
       "arena": "实盘道场",
-      "equity": 899.1921948384786,
-      "cash": 674.3941461288589,
-      "pnl": -100.8078051615214,
-      "pnlPct": -0.10080780516152141,
-      "realized": -100.8078051615215,
-      "trades": 2,
-      "winRate": 0.5,
-      "maxDrawdown": 0.14614445582673144,
-      "open": 1,
-      "decisions": 5,
-      "evolution": 1,
+      "equity": 1003.5340581124641,
+      "cash": 1003.5340581124641,
+      "pnl": 3.534058112464095,
+      "pnlPct": 0.003534058112464095,
+      "realized": 3.5340581124640824,
+      "trades": 18,
+      "winRate": 0.3888888888888889,
+      "maxDrawdown": 0.016847090129021386,
+      "open": 0,
+      "decisions": 36,
+      "evolution": 16,
       "ironBlocks": 0
     },
     {
       "id": "aoying",
       "name": "熬鹰",
       "arena": "实盘道场",
-      "equity": 916.7043839814909,
-      "cash": 504.18741118981995,
-      "pnl": -83.29561601850912,
-      "pnlPct": -0.08329561601850913,
-      "realized": -83.29561601850921,
-      "trades": 2,
-      "winRate": 0,
-      "maxDrawdown": 0.08329561601850913,
-      "open": 1,
-      "decisions": 5,
-      "evolution": 2,
+      "equity": 1008.1805172869657,
+      "cash": 305.16351456104655,
+      "pnl": 8.18051728696571,
+      "pnlPct": 0.00818051728696571,
+      "realized": 8.805006813377489,
+      "trades": 195,
+      "winRate": 0.4358974358974359,
+      "maxDrawdown": 0.03428303223953553,
+      "open": 2,
+      "decisions": 392,
+      "evolution": 60,
       "ironBlocks": 0
     },
     {
       "id": "hongqigong",
       "name": "洪七公",
       "arena": "期权演武场",
-      "equity": 1002.645107458058,
-      "cash": 859.980383949208,
-      "pnl": 2.6451074580579643,
-      "pnlPct": 0.0026451074580579642,
-      "realized": 0,
-      "trades": 0,
-      "winRate": 0,
-      "maxDrawdown": 0.010429781032224014,
+      "equity": 956.2742848456766,
+      "cash": 867.1401360023993,
+      "pnl": -43.72571515432344,
+      "pnlPct": -0.04372571515432344,
+      "realized": -57.774067997600554,
+      "trades": 39,
+      "winRate": 0.4358974358974359,
+      "maxDrawdown": 0.18111541695331618,
       "open": 2,
-      "decisions": 2,
-      "evolution": 0,
+      "decisions": 80,
+      "evolution": 26,
       "ironBlocks": 0
     },
     {
       "id": "huanhu",
       "name": "幻狐",
       "arena": "实盘道场",
-      "equity": 819.4739783983241,
-      "cash": 261.0867630252101,
-      "pnl": -180.5260216016759,
-      "pnlPct": -0.18052602160167588,
-      "realized": -164.8553949579832,
-      "trades": 1,
-      "winRate": 0,
-      "maxDrawdown": 0.25162410681941266,
-      "open": 2,
-      "decisions": 4,
-      "evolution": 1,
+      "equity": 1010.5831633697471,
+      "cash": 606.3498980218483,
+      "pnl": 10.583163369747126,
+      "pnlPct": 0.010583163369747127,
+      "realized": 10.583163369746547,
+      "trades": 57,
+      "winRate": 0.2631578947368421,
+      "maxDrawdown": 0.1831414705899195,
+      "open": 1,
+      "decisions": 115,
+      "evolution": 24,
       "ironBlocks": 0
     }
   ],
   "market": {
     "BTC": {
-      "price": 82500.64,
-      "chgPct": -1.24
+      "price": 82628.04,
+      "chgPct": 1.12
     },
     "ETH": {
-      "price": 2483.42,
-      "chgPct": -7.38
+      "price": 2487.96,
+      "chgPct": 0.34
     },
     "SOL": {
-      "price": 108.83,
-      "chgPct": -8.55
+      "price": 109.14,
+      "chgPct": -1.36
     },
     "BNB": {
-      "price": 742.09,
-      "chgPct": -3.77
+      "price": 742.49,
+      "chgPct": 1.09
     },
     "DOGE": {
       "price": 0.0853,
-      "chgPct": -12.06
+      "chgPct": 1.07
     },
     "PEPE": {
       "price": 0.00000395,
-      "chgPct": -10.84
+      "chgPct": 3.13
     },
     "SHIB": {
-      "price": 0.00000548,
-      "chgPct": -5.19
+      "price": 0.00000545,
+      "chgPct": 2.64
     },
     "WIF": {
-      "price": 0.2135,
-      "chgPct": -10.67
+      "price": 0.2156,
+      "chgPct": 3.36
     },
     "BONK": {
       "price": 0.00000337,
-      "chgPct": -7.16
+      "chgPct": 3.37
     },
     "FLOKI": {
-      "price": 0.00002739,
-      "chgPct": -2.18
+      "price": 0.00002815,
+      "chgPct": 7.65
     },
     "MEME": {
-      "price": 0.000563,
-      "chgPct": -9.78
+      "price": 0.000568,
+      "chgPct": 5.58
     }
   },
-  "startTick": 2,
-  "advancedTicks": 1
+  "startTick": 0,
+  "advancedTicks": 511,
+  "targetTick": 511,
+  "timelineBase": "2026-09-18T15:20:50.480Z",
+  "catchUp": true
 }
