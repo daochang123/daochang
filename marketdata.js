@@ -102,6 +102,22 @@ function bybitSpot() {
   return prices;
 }
 
+function okxSpot() {
+  const j = jsonFrom("https://www.okx.com/api/v5/market/tickers?instType=SPOT", 12);
+  const list = j && j.data;
+  if (!Array.isArray(list) || !list.length) throw new Error("okx tickers parse fail");
+  const prices = {};
+  for (const it of list) {
+    const inst = String(it.instId || "");      // e.g. BTC-USDT
+    const idx = inst.indexOf("-USDT");
+    if (idx <= 0) continue;
+    const coin = inst.slice(0, idx);
+    const px = parseFloat(it.last);
+    if (coin && px > 0) prices[coin] = px;
+  }
+  return prices;
+}
+
 // ---------------------------------------------------------------------------
 // 提供者注册表（按 priority 升序即为降级顺序；可运行时调整/禁用）
 // ---------------------------------------------------------------------------
@@ -110,6 +126,9 @@ const PROVIDERS = [
   { name: "binance-api", priority: 2, enabled: true, fn: binanceLike("https://api.binance.com") },
   { name: "gate.io", priority: 3, enabled: true, fn: gateSpot },
   { name: "bybit", priority: 4, enabled: true, fn: bybitSpot },
+  // 欧易 OKX：默认关闭——当前沙箱 egress 代理拦截 okx.com（SSL unexpected eof）。
+  // 在可直连/可代理 OKX 的环境用 DAOCHANG_OKX=1 启用即可，无需改代码。
+  { name: "okx", priority: 5, enabled: process.env.DAOCHANG_OKX === "1", fn: okxSpot },
 ];
 
 // 健康度跟踪（进程内；供自检与可观测）
@@ -205,4 +224,86 @@ function providerStatus() {
   return pickProviders().map((p) => Object.assign({ name: p.name, priority: p.priority }, HEALTH[p.name]));
 }
 
-module.exports = { TRADE_COINS, DISPLAY_COINS, fetchPrices, fetchPricesDetailed, fetchTickers, providerStatus, PROVIDERS };
+// ---------------------------------------------------------------------------
+// 历史小时 K 线（供「追平墙钟」回放缺失的 tick）
+//   - Binance vision → Binance api → Gate.io candles 逐级降级
+//   - 返回原始 Binance 风格数组：[[openTimeMs, open, high, low, close, ...], ...]
+// ---------------------------------------------------------------------------
+function binanceKlines(baseUrl, symbol, startMs, endMs) {
+  const url = baseUrl + "/api/v3/klines?symbol=" + symbol +
+    "&interval=1h&startTime=" + startMs + "&endTime=" + endMs + "&limit=1000";
+  const arr = jsonFrom(url, 20);
+  if (!Array.isArray(arr)) throw new Error("klines parse fail");
+  return arr;
+}
+function gateKlines(symbol, startMs, endMs) {
+  const pair = symbol.replace("USDT", "_USDT");
+  const from = Math.floor(startMs / 1000), to = Math.floor(endMs / 1000);
+  const arr = jsonFrom("https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=" +
+    pair + "&interval=1h&from=" + from + "&to=" + to, 20);
+  if (!Array.isArray(arr)) throw new Error("gate candles parse fail");
+  // Gate: [tsSec, quoteVol, close, high, low, open, baseVol, windowClosed] → 归一化为 Binance 风格
+  return arr.map((r) => [parseInt(r[0], 10) * 1000, r[5], r[3], r[4], r[2]]);
+}
+function fetchKlines(symbol, startMs, endMs) {
+  const tries = [
+    () => binanceKlines("https://data-api.binance.vision", symbol, startMs, endMs),
+    () => binanceKlines("https://api.binance.com", symbol, startMs, endMs),
+    () => gateKlines(symbol, startMs, endMs),
+  ];
+  for (const fn of tries) { try { const a = fn(); if (a && a.length) return a; } catch (e) { /* next */ } }
+  return [];
+}
+
+// 小时序列：返回 [{ ts, prices:{coin:px} }]，自 fromMs 起逐小时（含首尾），失败返回 null。
+//   fallbackPrices：某币种完全无 K 线时用实时价做常量兜底（仍缺失则该币进 missing → 返回 null）。
+function fetchHourlySeries(fromMs, toMs, fallbackPrices) {
+  const H = 3600 * 1000;
+  const startH = Math.floor(fromMs / H) * H;
+  const endH = Math.floor(toMs / H) * H;
+  const n = Math.round((endH - startH) / H) + 1;
+  if (n <= 0) return [];
+  if (n > 1000) return null;      // 超出单次拉取上限 → 交由上层降级为「仅推进当前 tick」
+
+  const perCoin = {};
+  const missing = [];
+  for (const pair of TRADE_COINS) {
+    const coin = pair[0], sym = pair[1];
+    const rows = fetchKlines(sym, startH, endH + H);
+    const m = {};
+    for (const r of rows) {
+      const ot = Number(r[0]);
+      const close = parseFloat(r[4]);
+      if (isFinite(ot) && close > 0) m[ot] = close;
+    }
+    if (!Object.keys(m).length) {
+      if (fallbackPrices && fallbackPrices[coin] > 0) {
+        const px = fallbackPrices[coin];
+        for (let i = 0; i < n; i++) m[startH + i * H] = px;   // 常量兜底
+      } else {
+        missing.push(coin); continue;
+      }
+    }
+    perCoin[coin] = m;
+  }
+  if (missing.length) return null;
+
+  const series = [];
+  const last = {};
+  for (let i = 0; i < n; i++) {
+    const ot = startH + i * H;
+    const prices = {};
+    for (const pair of TRADE_COINS) {
+      const coin = pair[0];
+      let px = perCoin[coin][ot];
+      if (!px) px = last[coin];                                  // 前向填充
+      if (!px) px = perCoin[coin][Object.keys(perCoin[coin])[0]]; // 兜底取最近一根
+      prices[coin] = px;
+      last[coin] = px;
+    }
+    series.push({ ts: ot, prices: prices });
+  }
+  return series;
+}
+
+module.exports = { TRADE_COINS, DISPLAY_COINS, fetchPrices, fetchPricesDetailed, fetchTickers, providerStatus, PROVIDERS, fetchKlines, fetchHourlySeries };
