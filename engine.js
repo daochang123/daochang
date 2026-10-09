@@ -461,8 +461,17 @@
   function openOption(profile, mgr, c, side, buySell, rationale) {
     var S = c.price, iv = c.iv / 100;
     var isCall = side === "call";
-    var k1 = isCall ? S * 1.03 : S * 0.97;   // 近端行权价（方向腿）
-    var k2 = isCall ? S * 1.10 : S * 0.90;   // 远端翼行权价（保护腿，defined-risk 价差）
+    var k1, k2;
+    if (buySell === "buy") {
+      // 买方：长腿贴 ATM（压低盈亏平衡点至≈1.7%），短翼作收益上限
+      // —— 修复「方向对但幅度不足仍亏」：原 3% 外长腿需 ~4% 行情才回本，实测中位有利波动仅 ~2%
+      k1 = S;
+      k2 = isCall ? S * 1.06 : S * 0.94;
+    } else {
+      // 卖方：短腿留 3% 安全垫，长腿作保护（defined-risk 信用价差）
+      k1 = isCall ? S * 1.03 : S * 0.97;
+      k2 = isCall ? S * 1.10 : S * 0.90;
+    }
     var Tdays = 7 + Math.floor(rng_global() * 21);
     var T = Tdays / 365;
     var r = 0.02;
@@ -477,6 +486,7 @@
     //   卖方：最大亏损 = 冻结保证金 = 权利金×maxWinRatio → 按风险预算反推权利金，硬顶保证金
     var equity = Math.max(mgr.equity || mgr.cash, 1);
     var riskPct = (profile.sim && profile.sim.riskPerTradePct) || 0.04;
+    if (buySell === "buy") riskPct *= 0.5; // 买方为方向卫星仓（无稳定 edge），风险预算减半
     var riskBudget = equity * riskPct;
     var cost = buySell === "buy"
       ? Math.min(riskBudget, mgr.cash * 0.5)
@@ -788,8 +798,8 @@
       // 持有周期到期：滚动/了结，规避临近到期 Gamma 风险
       if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) { ev.push(closePosition(mgr, pos, cc, "到期前滚动/了结，规避临近到期Gamma风险")); continue; }
     }
-    if (mgr.positions.length >= 2) return ev;
-
+    // 并发槽位让给卖方（部署 4 个仓位，实际风险受 12% 组合敞口上限约束），避免买方卫星仓挤掉卖方
+    if (mgr.positions.length >= 4) return ev;
     // 铁律诱惑：周期性想碰山寨被拦截（仅记录事件，不再中断持仓管理）
     if (rng() < 0.09) {
       var evils = ["DOGE.OP", "PEPE.OP", "WIF.OP", "SHIB.OP"];
@@ -800,19 +810,19 @@
 
     // ② 方向+波动率双轴（阈值锚定 sim 真实 IV 分布：中位≈38，常规区间 30~48）
     var iv = v.iv;
-    var dirClear = Math.abs(v.trendScore) >= 30 && v.regime !== 0;
-    var buy, side;
-    if (dirClear && iv <= 48) {
-      // 低IV + 方向明确 → 买方博弈方向
-      buy = true; side = (v.trendScore > 0) ? "call" : "put";
-    } else if (iv >= 42 || v.regime === 0) {
-      // 高IV 或 横盘 → 卖方收时间价值（defined-risk 价差，必有保护腿）
-      buy = false; side = (v.sma5 >= v.sma20) ? "call" : "put";
+    var buy = false, side = null;
+    // 卖方优先（时间价值是稳定 edge）：高IV 或 横盘 → 收时间价值（defined-risk 价差，必有保护腿）
+    if (iv >= 42 || v.regime === 0) {
+      side = (v.sma5 >= v.sma20) ? "call" : "put";
+    } else if (iv <= 42 && Math.abs(v.trendScore) >= 45) {
+      // 买方兜底卫星仓：IV 由当前K线 |ret|/vol 推导，与 volSpike 同源（「低IV+扩张」互斥），
+      //   本仿真买方无稳定方向 edge → 仅在低IV + 强趋势时小额博方向（风险预算减半，见 openOption）
+      buy = true; side = v.trendScore > 0 ? "call" : "put";
     } else {
       return ev; // 无清晰 edge，观望
     }
     ev.push(openOption(p, mgr, c, side, buy ? "buy" : "sell",
-      (buy ? "方向博弈(低IV)" : "卖方收时间价值(高IV/横盘)") + "：trendScore=" + v.trendScore + " IV=" + r2(iv) + " regime=" + v.regime + "，" + side + "(合法标的，defined-risk价差)"));
+      (buy ? "方向卫星仓(低IV+强趋势)" : "卖方收时间价值(高IV/横盘)") + "：RSI=" + Math.round(v.rsi) + " IV=" + r2(iv) + " trendScore=" + v.trendScore + " regime=" + v.regime + "，" + side));
     return ev;
   }
 
