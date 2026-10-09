@@ -3,8 +3,8 @@
     "data_freshness": {
       "pass": true,
       "age_hours": 0,
-      "tick": 511,
-      "generated_at": "2026-10-09T23:15:59.353Z"
+      "tick": 512,
+      "generated_at": "2026-10-09T23:55:41.793Z"
     },
     "real_price_mode": {
       "pass": true,
@@ -16,7 +16,7 @@
     },
     "decision_price_consistency": {
       "pass": true,
-      "checked": 873
+      "checked": 906
     },
     "meme_price_sanity": {
       "pass": true,
@@ -25,21 +25,21 @@
   },
   "failures": [],
   "status": "pass",
-  "generated_at": "2026-10-09T23:16:15.095Z",
+  "generated_at": "2026-10-09T23:55:51.689Z",
   "price_snapshot": null,
   "live_vs_snapshot": {
     "source": "binance-vision",
     "drift_pct": {
       "BTC": 0,
       "ETH": 0,
-      "SOL": 0.046,
-      "BNB": 0,
-      "DOGE": 0.023,
+      "SOL": -0.018,
+      "BNB": -0.001,
+      "DOGE": -0.012,
       "PEPE": 0,
-      "SHIB": 0,
+      "SHIB": 0.183,
       "WIF": 0,
       "BONK": 0,
-      "FLOKI": 0.036,
+      "FLOKI": 0,
       "MEME": 0
     }
   }
