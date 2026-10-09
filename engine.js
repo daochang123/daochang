@@ -499,21 +499,18 @@
     return { type: "open", coin: c.sym, kind: "option", side: side, detail: r2(cost), rationale: rationale };
   }
 
-  // fillPrice：实际成交价。止损/止盈按「配置档位」成交（回测约定：触发价位成交，单笔风险封顶），
-  //            否则按当时市价 c.price 成交。decision 里仍记市价（审计用），closed.exit 记真实成交价。
-  function realizePnl(mgr, pos, c, fillPrice) {
+  function realizePnl(mgr, pos, c) {
     var fee = (pos.notional || pos.spent || 0) * 0.0004;
-    var pnl = 0;
-    var exit = (fillPrice != null && isFinite(fillPrice)) ? fillPrice : c.price;
+    var pnl = 0, exit = c.price;
     if (pos.kind === "option") {
       var ov = optionState(pos, c);
       if (pos.side === "buy") { pnl = ov.abs - pos.spent - fee; mgr.cash += ov.abs; }
       else { pnl = pos.spent - ov.abs - fee; mgr.cash += pos.margin; mgr.cash -= ov.abs; }
     } else if (pos.kind === "spot") {
-      pnl = (exit - pos.entry) * pos.qty * (pos.side === "long" ? 1 : -1) - fee;
+      pnl = (c.price - pos.entry) * pos.qty * (pos.side === "long" ? 1 : -1) - fee;
       mgr.cash += pos.margin + pnl;
     } else {
-      pnl = (exit - pos.entry) * pos.qty * (pos.side === "long" ? 1 : -1) - fee;
+      pnl = (c.price - pos.entry) * pos.qty * (pos.side === "long" ? 1 : -1) - fee;
       mgr.cash += pos.margin + pnl;
     }
     mgr.stats.trades++; mgr.stats.realized += pnl;
@@ -523,11 +520,11 @@
     return pnl;
   }
 
-  function closePosition(mgr, pos, c, rationale, fillPrice) {
-    var pnl = realizePnl(mgr, pos, c, fillPrice);
+  function closePosition(mgr, pos, c, rationale) {
+    var pnl = realizePnl(mgr, pos, c);
     var idx = mgr.positions.indexOf(pos);
     if (idx >= 0) mgr.positions.splice(idx, 1);
-    logDecision(mgr, { tick: stateTick(), type: "close", coin: pos.coin, side: pos.side, detail: r2(pnl) + "U", entry: pos.entry, price: c.price, fill: (fillPrice != null && isFinite(fillPrice)) ? fillPrice : c.price, rationale: rationale });
+    logDecision(mgr, { tick: stateTick(), type: "close", coin: pos.coin, side: pos.side, detail: r2(pnl) + "U", entry: pos.entry, price: c.price, rationale: rationale });
     return { type: "close", coin: pos.coin, pnl: pnl, rationale: rationale };
   }
 
@@ -610,14 +607,13 @@
 
   function decideSniper(p, mgr, coins, rng) {
     var ev = [];
+    if (mgr.dayTrades >= 12) return ev; // 日内扫描上限（短中线为主，适度放宽）
+    if (mgr.dayLosses >= 3) return ev; // 连亏3笔停手
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
       if (profit(pos, cc) < -0.025) { ev.push(closePosition(mgr, pos, cc, "硬风控：单笔亏损达2.5%，执行纪律止损")); continue; }
       if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) ev.push(closePosition(mgr, pos, cc, "达到持仓周期，纪律离场"));
     }
-    // 熔断只禁「新开仓」，绝不影响上面对已有持仓的止损/到期管理（T0 事故修复）
-    if (mgr.dayTrades >= 12) return ev; // 日内扫描上限（短中线为主，适度放宽）
-    if (mgr.dayLosses >= 3) return ev; // 连亏3笔停手（仅停新单）
     if (mgr.positions.length >= 2) return ev;
     var candidates = [];
     for (var i = 0; i < p.sim.coinsA.length; i++) {
@@ -647,6 +643,7 @@
 
   function decideLaomao(p, mgr, coins, rng) {
     var ev = [];
+    if (mgr.monthTrades >= 18) return ev; // 月度出手上限（短中线为主，适度放宽）
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var c = coins[pos.coin]; if (!c) continue;
       var pnl = profit(pos, c);
@@ -661,8 +658,6 @@
       // 高位缩量 = 出货信号，落袋为主
       if (pnl > 0.4 && c.volSpike < 0.8) { ev.push(closePosition(mgr, pos, c, "高位缩量，出货信号，落袋为主")); continue; }
     }
-    // 熔断只禁「新开仓」，不影响已有持仓的滚仓/破位止损管理（T0 事故修复）
-    if (mgr.monthTrades >= 18) return ev; // 月度出手上限（短中线为主，适度放宽）
     if (mgr.positions.length >= 2) return ev;
     for (var i = 0; i < p.sim.coinsA.length; i++) {
       var cc = coins[p.sim.coinsA[i]]; if (!cc) continue;
@@ -693,6 +688,8 @@
 
   function decideAoying(p, mgr, coins, rng) {
     var ev = [];
+    if (mgr.dayTrades >= 16) return ev;  // 快进快出，日内上限
+    if (mgr.dayLosses >= 5) return ev;   // 连亏5笔停手
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
       var pos = mgr.positions[k]; var c = coins[pos.coin]; if (!c) continue;
       var pf = profit(pos, c);
@@ -702,9 +699,6 @@
       if (pf > 0.5) { ev.push(closePosition(mgr, pos, c, "浮盈" + Math.round(pf * 100) + "%，分层止盈落袋，不贪最后一个铜板")); continue; }
       if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) ev.push(closePosition(mgr, pos, c, "短线快进快出，持仓周期到，离场"));
     }
-    // 熔断只禁「新开仓」，不影响已有持仓的止损/止盈管理（T0 事故修复）
-    if (mgr.dayTrades >= 16) return ev;  // 快进快出，日内上限
-    if (mgr.dayLosses >= 5) return ev;   // 连亏5笔停手（仅停新单）
     if (mgr.positions.length >= 4) return ev;
     // 择优进场：全池扫描，选趋势/区间/极值信号最强的一个（不再随机抽币）
     var candidates = [];
@@ -736,60 +730,40 @@
     var ev = [];
     // 极端行情：波动放大触发「只做 BTC」铁律
     mgr.mode = (coins["BTC"] && coins["BTC"].iv > 85) ? "btc_only" : "";
-    var pool = mgr.mode === "btc_only" ? ["BTC"] : ["BTC", "ETH", "SOL"];
-    // 择优选标的：趋势越明确越值得出手（不再随机抽）
-    var pickC = null, pickScore = -Infinity;
-    for (var pi = 0; pi < pool.length; pi++) {
-      var c0 = coins[pool[pi]]; if (!c0) continue;
-      var vv = viewCoin(c0);
-      var sc = Math.abs(vv.trendScore) * 0.8 + Math.max(0, 45 - Math.abs(vv.iv - 40));
-      if (sc > pickScore) { pickScore = sc; pickC = c0; }
-    }
-    var c = pickC || coins[pool[Math.floor(rng() * pool.length)]];
-    var v = viewCoin(c);
-
-    // ① 持仓管理：止盈兑现 / 硬止损 / 持有周期到期。
-    //    期权无 sl/tp 字段，其风控完全由本段负责（全局止损循环不覆盖期权）；
-    //    故必须先于任何「熔断/观望」分支执行，杜绝连亏时关掉风控（T0 事故修复）。
-    for (var k = mgr.positions.length - 1; k >= 0; k--) {
-      var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
-      if (pos.kind !== "option") continue;
-      var pf = profit(pos, cc); // 相对已付(买方)/已收(卖方)权利金的收益率
-      // 买方：方向兑现（权利金+60%）→ 落袋，避免时间价值耗尽
-      if (pos.side === "buy" && pf >= 0.6) { ev.push(closePosition(mgr, pos, cc, "买方浮盈" + Math.round(pf * 100) + "%，方向兑现，落袋为安")); continue; }
-      // 卖方：时间价值大幅衰减（已赚50%）→ 提前平仓锁定（theta 兑现）
-      if (pos.side === "sell" && pf >= 0.5) { ev.push(closePosition(mgr, pos, cc, "卖方时间价值衰减" + Math.round(pf * 100) + "%，提前平仓锁利")); continue; }
-      // 硬止损：买方-45%（方向错）/ 卖方-35%（尾部风险更大）
-      var lossLine = pos.side === "sell" ? -0.35 : -0.45;
-      if (pf <= lossLine) { ev.push(closePosition(mgr, pos, cc, (pos.side === "sell" ? "卖方尾部" : "买方方向") + "风控：亏损达阈值，保护性平仓")); continue; }
-      // 持有周期到期：滚动/了结，规避临近到期 Gamma 风险
-      if ((stateTick() - pos.openTick) >= p.sim.holdMaxTicks) { ev.push(closePosition(mgr, pos, cc, "到期前滚动/了结，规避临近到期Gamma风险")); continue; }
-    }
-    if (mgr.positions.length >= 2) return ev;
-
-    // 铁律诱惑：周期性想碰山寨被拦截（仅记录事件，不再中断持仓管理）
+    // 铁律诱惑：周期性想碰山寨被拦截
     if (rng() < 0.09) {
       var evils = ["DOGE.OP", "PEPE.OP", "WIF.OP", "SHIB.OP"];
       var evil = evils[Math.floor(rng() * evils.length)];
       ev.push({ type: "iron_block", coin: evil, rationale: "铁律拦截：非BTC/ETH/SOL标的(" + evil + ")期权请求被拒绝，杜绝一期山寨币" });
       return ev;
     }
-
-    // ② 方向+波动率双轴（阈值锚定 sim 真实 IV 分布：中位≈38，常规区间 30~48）
-    var iv = v.iv;
-    var dirClear = Math.abs(v.trendScore) >= 30 && v.regime !== 0;
-    var buy, side;
-    if (dirClear && iv <= 48) {
-      // 低IV + 方向明确 → 买方博弈方向
-      buy = true; side = (v.trendScore > 0) ? "call" : "put";
-    } else if (iv >= 42 || v.regime === 0) {
-      // 高IV 或 横盘 → 卖方收时间价值（defined-risk 价差，必有保护腿）
-      buy = false; side = (v.sma5 >= v.sma20) ? "call" : "put";
-    } else {
-      return ev; // 无清晰 edge，观望
+    var pool = mgr.mode === "btc_only" ? ["BTC"] : ["BTC", "ETH", "SOL"];
+    // 择优选标的：趋势越明确、IV 越适中，越值得出手（不再随机抽）
+    var pickC = null, pickScore = -Infinity;
+    for (var pi = 0; pi < pool.length; pi++) {
+      var c0 = coins[pool[pi]]; if (!c0) continue;
+      var vv = viewCoin(c0);
+      var sc = Math.abs(vv.trendScore) * 0.6 + Math.max(0, 55 - Math.abs(vv.iv - 50));
+      if (sc > pickScore) { pickScore = sc; pickC = c0; }
     }
+    var c = pickC || coins[pool[Math.floor(rng() * pool.length)]];
+    var v = viewCoin(c);
+    // 到期/止损：买方亏50%、卖方亏35%（尾部风险更大）保护性平仓
+    for (var k = mgr.positions.length - 1; k >= 0; k--) {
+      var pos = mgr.positions[k]; var cc = coins[pos.coin]; if (!cc) continue;
+      var lossLine = pos.side === "sell" ? -0.35 : -0.5;
+      if (profit(pos, cc) < lossLine) { ev.push(closePosition(mgr, pos, cc, (pos.side === "sell" ? "卖方尾部" : "买方方向") + "风控：亏损达阈值，保护性平仓")); }
+    }
+    if (mgr.positions.length >= 2) return ev;
+    // 方向+波动率双轴（蒸馏核心逻辑）
+    var trend = v.trendScore; // -100~+100
+    var buy, side;
+    if (v.regime !== 0 && v.iv < 75) { buy = true; side = (v.regime === 1) ? "call" : "put"; }
+    else if (v.regime === 0 && v.iv > 55) { buy = false; side = (v.sma5 > v.sma20) ? "call" : "put"; }
+    else if (v.iv >= 90) { buy = true; side = (v.sma5 > v.sma20) ? "call" : "put"; }
+    else return ev; // 无清晰 edge，观望
     ev.push(openOption(p, mgr, c, side, buy ? "buy" : "sell",
-      (buy ? "方向博弈(低IV)" : "卖方收时间价值(高IV/横盘)") + "：trendScore=" + v.trendScore + " IV=" + r2(iv) + " regime=" + v.regime + "，" + side + "(合法标的，defined-risk价差)"));
+      (buy ? "方向博弈" : "卖方收时间价值") + "：trendScore=" + trend + " IV=" + r2(v.iv) + "，" + side + "(合法标的，defined-risk价差)"));
     return ev;
   }
 
@@ -798,6 +772,8 @@
   // 离场条件：反向1+3确认 / 趋势评分反转 / 阶段4退潮 / 硬止损
   function decideHuanhu(p, mgr, coins, rng) {
     var ev = [];
+    if (mgr.dayTrades >= 5) return ev;
+    if (mgr.dayLosses >= 3) return ev;
     var rrMin = p.sim.rrMin || 3.0;
     // ① 持仓管理：形态失效 + 评分反转 + 阶段退潮 + 硬止损
     for (var k = mgr.positions.length - 1; k >= 0; k--) {
@@ -841,9 +817,6 @@
       }
     }
     // ② 右侧入场：1+3形态确认 + 评分门槛
-    // 熔断只禁「新开仓」，不影响上面对已有持仓的形态失效/止损管理（T0 事故修复）
-    if (mgr.dayTrades >= 5) return ev;
-    if (mgr.dayLosses >= 3) return ev;
     if (mgr.positions.length >= 3) return ev;
     var cands = [];
     for (var i = 0; i < p.sim.coinsA.length; i++) {
@@ -986,10 +959,7 @@
           var expir = pos.kind === "option" && (st.tick - pos.openTick) >= pos.tExp * TICK_PER_DAY;
           if (slHit || tpHit || expir) {
             var why = slHit ? "止损触发" : (tpHit ? "止盈触发" : "期权到期结算");
-            // 按「配置的止损/止盈价」成交，把单笔亏损封顶在预设风险内；
-            // 杜绝跳空时按市价成交导致单笔亏损无上限（T0 事故修复）。期权取市价结算。
-            var fillPrice = expir ? null : (slHit ? pos.sl : pos.tp);
-            events.push(closePosition(mgr, pos, c, why, fillPrice));
+            events.push(closePosition(mgr, pos, c, why));
           }
         }
         var ev = decide(profile, mgr, st.market, rng, st);
