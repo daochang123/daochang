@@ -23,6 +23,8 @@ const SYNC_FILES = [
   "profiles.js",
   "engine.js",
   "app.js",
+  "datafeed.js",
+  "capture.js",
   "build.js",
   "snapshot.js",
   "marketdata.js",
