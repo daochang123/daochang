@@ -26,10 +26,14 @@ OUT = "video_ingest"
 os.makedirs(OUT, exist_ok=True)
 
 
-def run(cmd, quiet=False):
+def run(cmd, quiet=False, show_fail=True):
     if not quiet:
         print(">>", " ".join(cmd), flush=True)
-    return subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if show_fail and res.returncode != 0:
+        print(f"   [rc={res.returncode}] stdout 尾部: {(res.stdout or '')[-1200:]}", flush=True)
+        print(f"   [rc={res.returncode}] stderr 尾部: {(res.stderr or '')[-1500:]}", flush=True)
+    return res
 
 
 # ---------- 1. 拉取频道视频列表 ----------
@@ -61,13 +65,13 @@ for idx, it in enumerate(items, 1):
     print(f"\n[ingest] ({idx}/{len(items)}) {vid} {it['title'][:40]}", flush=True)
 
     # 2a. 字幕（自动 + 人工，vtt）
-    run(["yt-dlp", *cookies, "--skip-download", "--no-warnings", "--ignore-errors",
+    run(["yt-dlp", *cookies, "--skip-download",
          "--write-auto-subs", "--write-subs", "--sub-langs", "zh.*,zh-Hans,en.*",
          "--convert-subs", "vtt", "-o", os.path.join(out, "sub"), url])
 
     # 2b. 视频（低清，减小体积）
     tmp = f"/tmp/{vid}.mp4"
-    run(["yt-dlp", *cookies, "--no-warnings", "--ignore-errors",
+    run(["yt-dlp", *cookies,
          "-f", "bv*[height<=480]/b[height<=480]/b",
          "--merge-output-format", "mp4", "-o", tmp, url])
     src = tmp if os.path.exists(tmp) else (glob.glob(f"/tmp/{vid}.*") or [None])[0]
@@ -87,7 +91,7 @@ for idx, it in enumerate(items, 1):
             pass
     else:
         it["frames"] = 0
-        print(f"[ingest] 视频下载失败，stderr 尾部：\n{r.stderr[-1500:]}", flush=True)
+        print("[ingest] 视频下载失败（诊断见上方 yt-dlp 输出）", flush=True)
 
     it["subs"] = [os.path.basename(p) for p in glob.glob(os.path.join(out, "sub*.vtt"))]
     it["fetched_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
