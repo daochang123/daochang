@@ -1,6 +1,6 @@
 {
   "channel": "https://www.youtube.com/@ETH88K/videos",
-  "count": 3,
+  "count": 1,
   "items": [
     {
       "id": "-GqGWpprUes",
@@ -8,23 +8,7 @@
       "url": "https://www.youtube.com/watch?v=-GqGWpprUes",
       "frames": 0,
       "subs": [],
-      "fetched_at": "2026-10-10T01:28:59Z"
-    },
-    {
-      "id": "HOkhVwzZ5n0",
-      "title": "10U战神第3期：10U到530U，再到爆仓！我经历了什么？",
-      "url": "https://www.youtube.com/watch?v=HOkhVwzZ5n0",
-      "frames": 0,
-      "subs": [],
-      "fetched_at": "2026-10-10T01:29:02Z"
-    },
-    {
-      "id": "C12pYCFpTwM",
-      "title": "10U战神第2期：最高88倍，从10美金到890美金，再到220美金，10美金如何做交易？以太坊/比特币期权滚仓实盘记录 #以小博大",
-      "url": "https://www.youtube.com/watch?v=C12pYCFpTwM",
-      "frames": 0,
-      "subs": [],
-      "fetched_at": "2026-10-10T01:29:04Z"
+      "fetched_at": "2026-10-10T01:31:44Z"
     }
   ]
 }
