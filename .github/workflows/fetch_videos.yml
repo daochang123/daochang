@@ -45,6 +45,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
 
+      - name: 安装 deno（YouTube 提取所需 JS 运行时）
+        run: |
+          curl -fsSL https://deno.land/install.sh | sh
+          echo "$HOME/.deno/bin" >> "$GITHUB_PATH"
+
       - name: 写入 cookies（如配置了 YT_COOKIES 密钥）
         env:
           YT_COOKIES: ${{ secrets.YT_COOKIES }}
