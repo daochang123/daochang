@@ -46,8 +46,15 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
 
       - name: 写入 cookies（如配置了 YT_COOKIES 密钥）
-        if: ${{ secrets.YT_COOKIES != '' }}
-        run: printf '%s' "${{ secrets.YT_COOKIES }}" > cookies.txt
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          if [ -n "$YT_COOKIES" ]; then
+            printf '%s' "$YT_COOKIES" > cookies.txt
+            echo "已写入 cookies.txt"
+          else
+            echo "未配置 YT_COOKIES，跳过"
+          fi
 
       - name: 抓取 + 抽帧 + 字幕
         run: |
