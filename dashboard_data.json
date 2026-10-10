@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-09T23:56:00.024Z",
+  "generated_at": "2026-10-10T00:02:10.930Z",
   "launch_ts": "2026-09-13T00:00:00+08:00",
   "timezone": "Asia/Shanghai",
   "seed": 20260913,
@@ -65,19 +65,19 @@
           }
         ]
       },
-      "equity": 3777.1545366219098,
-      "cash": 792.9473546575864,
-      "pnl": 2777.1545366219098,
-      "pnlPct": 2.77715453662191,
-      "realized": 2475.5404597796264,
-      "trades": 355,
-      "wins": 125,
-      "losses": 230,
-      "winRate": 0.352112676056338,
-      "maxDrawdown": 0.44626225467827807,
+      "equity": 1354.506613269321,
+      "cash": 563.2010032042166,
+      "pnl": 354.50661326932095,
+      "pnlPct": 0.3545066132693209,
+      "realized": 290.8490599273279,
+      "trades": 328,
+      "wins": 107,
+      "losses": 221,
+      "winRate": 0.32621951219512196,
+      "maxDrawdown": 0.5226591876572716,
       "open": 4,
-      "decisionsCount": 744,
-      "evolutionCount": 77
+      "decisionsCount": 670,
+      "evolutionCount": 70
     },
     {
       "id": "sniper",
@@ -136,19 +136,19 @@
           }
         ]
       },
-      "equity": 335.55564372414005,
-      "cash": 335.55564372414005,
-      "pnl": -664.44435627586,
-      "pnlPct": -0.66444435627586,
-      "realized": -664.4443562758597,
-      "trades": 261,
-      "wins": 62,
-      "losses": 199,
-      "winRate": 0.23754789272030652,
-      "maxDrawdown": 0.6814050456207347,
+      "equity": 168.0814057418147,
+      "cash": 168.0814057418147,
+      "pnl": -831.9185942581853,
+      "pnlPct": -0.8319185942581853,
+      "realized": -831.9185942581861,
+      "trades": 276,
+      "wins": 66,
+      "losses": 210,
+      "winRate": 0.2391304347826087,
+      "maxDrawdown": 0.8510923947395472,
       "open": 0,
-      "decisionsCount": 522,
-      "evolutionCount": 68
+      "decisionsCount": 552,
+      "evolutionCount": 72
     },
     {
       "id": "laomao",
@@ -206,19 +206,19 @@
           }
         ]
       },
-      "equity": 846.2761547085379,
-      "cash": 846.2761547085379,
-      "pnl": -153.7238452914621,
-      "pnlPct": -0.1537238452914621,
-      "realized": -153.72384529146177,
+      "equity": 961.6106760279745,
+      "cash": 961.6106760279745,
+      "pnl": -38.38932397202552,
+      "pnlPct": -0.038389323972025526,
+      "realized": -38.38932397202552,
       "trades": 36,
-      "wins": 7,
-      "losses": 29,
-      "winRate": 0.19444444444444445,
-      "maxDrawdown": 0.1537238452914621,
+      "wins": 14,
+      "losses": 22,
+      "winRate": 0.3888888888888889,
+      "maxDrawdown": 0.19650233959354615,
       "open": 0,
       "decisionsCount": 72,
-      "evolutionCount": 41
+      "evolutionCount": 40
     },
     {
       "id": "aoying",
@@ -274,19 +274,19 @@
           }
         ]
       },
-      "equity": 715.4238308426152,
-      "cash": 715.4238308426152,
-      "pnl": -284.5761691573848,
-      "pnlPct": -0.2845761691573848,
-      "realized": -284.5761691573842,
-      "trades": 549,
-      "wins": 194,
-      "losses": 355,
-      "winRate": 0.3533697632058288,
-      "maxDrawdown": 0.3383994388963565,
+      "equity": 551.2884566940209,
+      "cash": 551.2884566940209,
+      "pnl": -448.71154330597915,
+      "pnlPct": -0.4487115433059791,
+      "realized": -448.71154330598046,
+      "trades": 594,
+      "wins": 251,
+      "losses": 343,
+      "winRate": 0.4225589225589226,
+      "maxDrawdown": 0.5729474414452209,
       "open": 0,
       "decisionsCount": 800,
-      "evolutionCount": 74
+      "evolutionCount": 77
     },
     {
       "id": "hongqigong",
@@ -343,19 +343,19 @@
           }
         ]
       },
-      "equity": 693.77088226553,
-      "cash": 639.0555776375535,
-      "pnl": -306.22911773447004,
-      "pnlPct": -0.30622911773447004,
-      "realized": -307.77366409539906,
-      "trades": 560,
-      "wins": 243,
-      "losses": 317,
-      "winRate": 0.43392857142857144,
-      "maxDrawdown": 0.3076854962933018,
-      "open": 3,
-      "decisionsCount": 800,
-      "evolutionCount": 69
+      "equity": 157.2153800708196,
+      "cash": 116.2900759985902,
+      "pnl": -842.7846199291804,
+      "pnlPct": -0.8427846199291804,
+      "realized": -861.9503931069839,
+      "trades": 43,
+      "wins": 1,
+      "losses": 42,
+      "winRate": 0.023255813953488372,
+      "maxDrawdown": 0.8728891095745688,
+      "open": 2,
+      "decisionsCount": 88,
+      "evolutionCount": 56
     },
     {
       "id": "huanhu",
@@ -415,19 +415,19 @@
           }
         ]
       },
-      "equity": 197.36126981984188,
-      "cash": 37.769904893320316,
-      "pnl": -802.6387301801581,
-      "pnlPct": -0.8026387301801581,
-      "realized": -825.1393291975915,
-      "trades": 214,
+      "equity": 92.54801797722223,
+      "cash": 16.26628869679555,
+      "pnl": -907.4519820227778,
+      "pnlPct": -0.9074519820227778,
+      "realized": -924.6931078852064,
+      "trades": 222,
       "wins": 68,
-      "losses": 146,
-      "winRate": 0.3177570093457944,
-      "maxDrawdown": 0.8490306738073043,
+      "losses": 154,
+      "winRate": 0.3063063063063063,
+      "maxDrawdown": 0.9317401891000049,
       "open": 3,
-      "decisionsCount": 431,
-      "evolutionCount": 66
+      "decisionsCount": 447,
+      "evolutionCount": 61
     }
   ],
   "ironRulesOptions": [
