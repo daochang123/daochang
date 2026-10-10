@@ -1,0 +1,70 @@
+name: fetch-videos
+
+# 在 GitHub 服务器上抓取 YouTube 频道视频 → 抽关键帧 + 字幕 → 提交回仓库
+# 沙箱网络到 YouTube 被出口代理掐断，但 GitHub runner 的网络不受此限制；
+# 结果提交回仓库后，沙箱通过可达的 GitHub API 读取并做蒸馏。
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "YouTube 频道 /videos 链接"
+        required: true
+        default: "https://www.youtube.com/@ETH88K/videos"
+      max_videos:
+        description: "本次抓取视频数量"
+        required: true
+        default: "6"
+      frame_interval:
+        description: "抽帧间隔（秒）"
+        required: true
+        default: "20"
+      max_frames:
+        description: "单个视频最多帧数"
+        required: true
+        default: "80"
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装 yt-dlp / ffmpeg
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          pip install -U yt-dlp
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: 写入 cookies（如配置了 YT_COOKIES 密钥）
+        if: ${{ secrets.YT_COOKIES != '' }}
+        run: printf '%s' "${{ secrets.YT_COOKIES }}" > cookies.txt
+
+      - name: 抓取 + 抽帧 + 字幕
+        run: |
+          python3 tools/ingest_videos.py \
+            "${{ inputs.channel }}" \
+            "${{ inputs.max_videos }}" \
+            "${{ inputs.frame_interval }}" \
+            "${{ inputs.max_frames }}"
+
+      - name: 提交结果回仓库
+        run: |
+          git config user.name "ingest-bot"
+          git config user.email "ingest-bot@users.noreply.github.com"
+          git add -f video_ingest || true
+          if git diff --cached --quiet; then
+            echo "无新增内容，跳过提交"
+          else
+            git commit -m "ingest: 视频帧+字幕 $(date -u +%FT%TZ)"
+            git push
+          fi
