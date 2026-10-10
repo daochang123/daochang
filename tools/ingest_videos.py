@@ -63,24 +63,38 @@ def yt(args, url):
     return last
 
 
-# ---------- 1. 拉取频道视频列表 ----------
-print(f"[ingest] channel={channel} max_videos={max_videos} "
-      f"interval={frame_interval}s max_frames={max_frames} "
-      f"cookies={'有' if cookies else '无'}", flush=True)
-r = run(["yt-dlp", "--flat-playlist", "--no-warnings", "--ignore-errors",
-         "--print", "%(id)s\t%(title)s", *cookies, channel])
-lines = [l for l in r.stdout.splitlines() if l.strip()]
-if not lines:
-    print("[ingest] 列表抓取失败，stderr 尾部：", flush=True)
-    print(r.stderr[-3000:], flush=True)
-    sys.exit(1)
+# ---------- 1. 确定待处理视频清单（优先 urls.txt，否则拉频道列表） ----------
+import urllib.parse as up  # noqa: E402
 
-items = []
-for l in lines[:max_videos]:
-    parts = l.split("\t", 1)
-    items.append({"id": parts[0].strip(),
-                  "title": (parts[1].strip() if len(parts) > 1 else parts[0].strip())})
-print(f"[ingest] 待处理 {len(items)} 个视频", flush=True)
+
+def extract_id(u):
+    v = up.parse_qs(up.urlparse(u).query).get("v")
+    return v[0] if v else u.rsplit("/", 1)[-1].split("?")[0]
+
+
+urls_file = os.path.join(OUT, "urls.txt")
+print(f"[ingest] max_videos={max_videos} interval={frame_interval}s "
+      f"max_frames={max_frames} cookies={'有' if cookies else '无'}", flush=True)
+
+if os.path.exists(urls_file):
+    raw = [l.strip() for l in open(urls_file, encoding="utf-8")
+           if l.strip() and not l.strip().startswith("#")]
+    items = [{"id": extract_id(u), "title": "", "src": u} for u in raw][:max_videos]
+    print(f"[ingest] 清单文件 urls.txt：{len(items)} 个视频", flush=True)
+else:
+    r = run(["yt-dlp", "--flat-playlist", "--no-warnings", "--ignore-errors",
+             "--print", "%(id)s\t%(title)s", *cookies, channel])
+    lines = [l for l in r.stdout.splitlines() if l.strip()]
+    if not lines:
+        print("[ingest] 频道列表抓取失败，stderr 尾部：", flush=True)
+        print(r.stderr[-3000:], flush=True)
+        sys.exit(1)
+    items = []
+    for l in lines[:max_videos]:
+        parts = l.split("\t", 1)
+        items.append({"id": parts[0].strip(),
+                      "title": (parts[1].strip() if len(parts) > 1 else parts[0].strip())})
+    print(f"[ingest] 频道列表：{len(items)} 个视频", flush=True)
 
 # ---------- 2. 逐个下载 + 抽帧 + 字幕 ----------
 for idx, it in enumerate(items, 1):
@@ -97,11 +111,21 @@ for idx, it in enumerate(items, 1):
         "--sub-langs", "zh.*,zh-Hans,en.*", "--convert-subs", "vtt",
         "-o", os.path.join(out, "sub")], url)
 
-    # 2b. 视频（低清，减小体积）
+    # 2b. 视频（低清，减小体积）+ 元数据
     tmp = f"/tmp/{vid}.mp4"
     yt(["-f", "bv*[height<=480]/b[height<=480]/b", "--merge-output-format", "mp4",
-        "-o", tmp], url)
-    src = tmp if os.path.exists(tmp) else (glob.glob(f"/tmp/{vid}.*") or [None])[0]
+        "--write-info-json", "-o", tmp], url)
+    src = (tmp if os.path.exists(tmp)
+           else next((p for p in glob.glob(f"/tmp/{vid}.*")
+                      if p.endswith((".mp4", ".mkv", ".webm"))), None))
+    info = f"/tmp/{vid}.info.json"
+    if os.path.exists(info):
+        try:
+            j = json.load(open(info, encoding="utf-8"))
+            it["title"] = j.get("title") or it["title"]
+            it["duration"] = j.get("duration")
+        except Exception:
+            pass
 
     # 2c. 抽帧
     if src and os.path.exists(src):
