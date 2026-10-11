@@ -199,95 +199,10 @@ function fetchTickers() {
 }
 
 // ---------------------------------------------------------------------------
-// 历史小时 K 线（漏跑补推用）：多源降级批量拉取「按小时升序的收盘价序列」
-// fetchHistoryKlines(startMs, nHours) -> { closes:{coin:[c0..cn-1]}, source, ms } | null
-// 铁律：所有源均须返回完整 nHours 根且首根小时对齐，缺一即降级下一源
-// ---------------------------------------------------------------------------
-function klinesBinance(baseUrl) {
-  return function (startMs, nHours) {
-    const out = {};
-    const MAX = 1000;
-    let done = 0;
-    while (done < nHours) {
-      const take = Math.min(MAX, nHours - done);
-      for (const [coin, sym] of TRADE_COINS) {
-        const arr = jsonFrom(
-          baseUrl + "/api/v3/klines?symbol=" + sym + "&interval=1h&startTime=" + (startMs + done * 3600000) + "&limit=" + take,
-          25
-        );
-        if (!Array.isArray(arr) || arr.length < take) throw new Error("klines incomplete (" + (arr ? arr.length : 0) + "/" + take + ") " + coin);
-        if (Number(arr[0][0]) !== startMs + done * 3600000) throw new Error("klines misaligned " + coin);
-        const closes = out[coin] || (out[coin] = []);
-        for (let i = 0; i < take; i++) {
-          const c = parseFloat(arr[i][4]);
-          if (!(c > 0)) throw new Error("bad kline close " + coin);
-          closes.push(c);
-        }
-      }
-      done += take;
-    }
-    return out;
-  };
-}
-
-function klinesGate() {
-  return function (startMs, nHours) {
-    const out = {};
-    const MAX = 1000;
-    let done = 0;
-    while (done < nHours) {
-      const take = Math.min(MAX, nHours - done);
-      const fromSec = Math.floor((startMs + done * 3600000) / 1000);
-      for (const [coin] of TRADE_COINS) {
-        // Gate v4 返回倒序（最新在前），窗口 [from, from+take*3600) 秒；元素 [ts, qvol, bvol, close, open, high, low, closed]
-        const arr = jsonFrom(
-          "https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=" + coin + "_USDT&interval=1h&from=" + fromSec + "&to=" + (fromSec + take * 3600 - 1) + "&limit=" + take,
-          25
-        );
-        if (!Array.isArray(arr) || arr.length < take) throw new Error("gate klines incomplete (" + (arr ? arr.length : 0) + "/" + take + ") " + coin);
-        const asc = arr.slice(0, take).sort((x, y) => Number(x[0]) - Number(y[0]));
-        if (Number(asc[0][0]) !== fromSec) throw new Error("gate klines misaligned " + coin);
-        const closes = out[coin] || (out[coin] = []);
-        for (let i = 0; i < take; i++) {
-          const c = parseFloat(asc[i][3]);
-          if (!(c > 0)) throw new Error("bad gate kline close " + coin);
-          closes.push(c);
-        }
-      }
-      done += take;
-    }
-    return out;
-  };
-}
-
-function fetchHistoryKlines(startMs, nHours) {
-  if (!Number.isFinite(nHours) || nHours < 1 || nHours > 10000) return null;
-  const sources = [
-    { name: "binance-vision", fn: klinesBinance("https://data-api.binance.vision") },
-    { name: "binance-api", fn: klinesBinance("https://api.binance.com") },
-    { name: "gate.io", fn: klinesGate() },
-  ];
-  for (const s of sources) {
-    const t0 = Date.now();
-    try {
-      const closes = s.fn(startMs, nHours);
-      return { closes: closes, source: s.name, ms: Date.now() - t0 };
-    } catch (e) {
-      // 降级下一源
-    }
-  }
-  return null;
-}
-
-// ---------------------------------------------------------------------------
 // 可观测：提供者健康度快照
 // ---------------------------------------------------------------------------
 function providerStatus() {
   return pickProviders().map((p) => Object.assign({ name: p.name, priority: p.priority }, HEALTH[p.name]));
 }
 
-module.exports = {
-  TRADE_COINS, DISPLAY_COINS,
-  fetchPrices, fetchPricesDetailed, fetchTickers, fetchHistoryKlines,
-  providerStatus, PROVIDERS,
-};
+module.exports = { TRADE_COINS, DISPLAY_COINS, fetchPrices, fetchPricesDetailed, fetchTickers, providerStatus, PROVIDERS };
